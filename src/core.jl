@@ -45,21 +45,6 @@ randomPSD(n, λ=1) = randomPSD(GLOBAL_RNG, n, λ)
 export nearestNeighbor
 
 """
-    squared_distance(v,w)
-
-Returns the squared Euclidean distance between
-two finite-dimensional vectors `v` and `w`.
-
-### Note
-Applies to multidimensional arrays as the distance
-between the vectorized forms of the arrays.
-"""
-function squared_distance(v,w)
-	return sum(abs2,v .- w)
-end
-
-
-"""
     min_dist(v, D)
 
 Finds the minimum distance vector in `D` from `v`.
@@ -144,10 +129,11 @@ end
 """
     optimalAction_NearestNeighbor(  crlb, actionSpace, 
                                     samples, values, 
-                                    jacobian)
+                                    jacobian, σ²)
 
 Computes the optimal action for a given state based on the current 
 nearest neighbor approximation of the value function.
+Assumes linear measurement under additive Gaussian noise.
 
 ### Arguments
  - `crlb`       - Current Cramér-Rao bound
@@ -155,6 +141,7 @@ nearest neighbor approximation of the value function.
  - `samples`    - Sample locations in value function
  - `values`     - Sample evaluations of value function
  - `jacobian`   - Jacobian of flow for current timestep
+ - `σ²`         - Measurement variance
 
 ### Returns
 The action that minimizes the Cramér-Rao bound
@@ -204,7 +191,7 @@ function valueUpdate_NearestNeighbor(   crlb,
 
 	update_vals = zeros(length(actionSpace))
 	for i in 1:length(actionSpace)
-		new_state = updateState(crlb, actionSpace[i], jacobian)
+		new_state = updateCRLB(crlb, actionSpace[i], jacobian)
 		update_vals[i] = nearestNeighbor(new_state, samples,values)
 	end
 	return γ * minimum(update_vals) + tr(state)
