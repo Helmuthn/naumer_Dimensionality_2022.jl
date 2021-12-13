@@ -96,5 +96,32 @@ end
 end
 
 @testset "valueUpdate_NearestNeighbor" begin
+    crlb         = [1.0 0.0;
+                    0.0 5.0]
 
+    actionSpace  = [[1.0, 0.0], [0.0, 1.0]]
+
+    jacobian     = [1.0 0.0
+                    0.0 1.0]
+    σ² = 1.0
+    γ = 0.5
+
+    samples = zeros(2,2,2)
+    samples[:,:,1] = [0.5 0.0;
+                      0.0 5.0 ]
+
+    samples[:,:,2] = [1.0 0.0;
+                      0.0 0.8 ]
+
+    values =  [5.5,1.8]
+
+    update = valueUpdate_NearestNeighbor(   crlb,
+                                            γ,
+                                            jacobian,
+                                            actionSpace,
+                                            samples, values,
+                                            σ²)
+
+    truth = 6.0 + 0.9
+    @test update ≈ truth
 end

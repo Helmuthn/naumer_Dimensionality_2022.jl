@@ -172,6 +172,8 @@ Iterates the discounted Bellman equation for minimizing the
 CRLB at a given current Fisher information under the
 nearest neighbor value approximation for a given point.
 
+Assumes linear measurement under additive Gaussian noise.
+
 ### Arguments
  - `crlb`       - Current Cramér-Rao bound
  - `γ`          - Discount factor
@@ -179,22 +181,24 @@ nearest neighbor value approximation for a given point.
  - `actionSpace`- Action Space (finite)
  - `samples`    - Sample locations in value function
  - `values`     - Sample evaluations of value function
+ - `σ²`         - Noise variance
 
 ### Returns
-The updated value function approximation evaluated at `information`
+The updated value function approximation evaluated at `crlb`
 """
 function valueUpdate_NearestNeighbor(   crlb, 
                                         γ, 
                                         jacobian, 
                                         actionSpace, 
-                                        samples, values)
+                                        samples, values,
+                                        σ²)
 
 	update_vals = zeros(length(actionSpace))
 	for i in 1:length(actionSpace)
-		new_state = updateCRLB(crlb, actionSpace[i], jacobian)
-		update_vals[i] = nearestNeighbor(new_state, samples,values)
+		new_crlb = updateCRLB(crlb, actionSpace[i], jacobian, σ²)
+		update_vals[i] = nearestNeighbor(new_crlb, samples, values)
 	end
-	return γ * minimum(update_vals) + tr(state)
+	return γ * minimum(update_vals) + tr(crlb)
 end
 
 
