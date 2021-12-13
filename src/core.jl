@@ -2,7 +2,8 @@
 #
 # The functions in this file could be applied to real data.
 
-using Random: MersenneTwister
+using LinearAlgebra: qr, Diagonal
+using Random: MersenneTwister, randexp
 
 GLOBAL_RNG = MersenneTwister()
 
@@ -11,6 +12,8 @@ GLOBAL_RNG = MersenneTwister()
 #################################################
 ################ Random Sampling ################
 #################################################
+
+export randomPSD
 
 """
     randomPSD([rng,] n, λ=1)
@@ -25,17 +28,20 @@ exponentially distributed eigenvalues.
 ### Returns
 A random `n×n` matrix
 """
-function randomPSD([rng=GLOBAL_RNG], n, λ=1)
+function randomPSD(rng, n, λ=1)
     mat = randn(rng,n,n)
     ortho, ~ = qr(mat)
-	return ortho' * Diagonal(abs.(σ*randexp(rng,n))) * ortho
+	return ortho' * Diagonal(randexp(rng,n)/λ) * ortho
 end
+
+randomPSD(n, λ=1) = randomPSD(GLOBAL_RNG, n, λ)
 
 
 #################################################
 ################ Interpolation ##################
 #################################################
 
+export nearestNeighbor
 
 """
     nearestNeighbor(target, samples, values)
@@ -61,6 +67,8 @@ end
 #################################################
 ################# POMDP Tools ###################
 #################################################
+
+export updateFisherInformation, optimalAction_NearestNeighbor, valueUpdate_NearestNeighbor
 
 """
     updateFisherInformation(    information, 
@@ -178,7 +186,12 @@ This function is multithreaded, remember to give Julia multiple threads when lau
 function valueIterate(γ, jacobian, actionSpace, samples, values)
 	new_out = zeros(length(values))
 	Threads.@threads for i in 1:length(values)
-		new_out[i] = valueUpdate(view(samples,:,:,i), γ, jacobian, actionSpace, samples, values)
+		new_out[i] = valueUpdate_NearestNeighbor(   view(samples,:,:,i), 
+                                                    γ, 
+                                                    jacobian, 
+                                                    actionSpace, 
+                                                    samples, values)
+
 	end
 	return new_out
 end
