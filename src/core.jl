@@ -3,21 +3,18 @@
 # The functions in this file could be applied to real data.
 
 using LinearAlgebra: qr, Diagonal, tr
-using Random: MersenneTwister, randexp
+using Random: MersenneTwister, randexp, GLOBAL_RNG
 using EllipsisNotation
-
-GLOBAL_RNG = MersenneTwister()
-
 
 
 #################################################
 ################ Random Sampling ################
 #################################################
 
-export randomPSD
+export randomPSD, samplePSD
 
 """
-    randomPSD([rng,] n, λ=1)
+    randomPSD([rng = GLOBAL_RNG,] n, λ=1)
 
 Generate a random `n×n` positive definite matrix with i.i.d.
 exponentially distributed eigenvalues.
@@ -36,6 +33,31 @@ function randomPSD(rng, n, λ=1)
 end
 
 randomPSD(n, λ=1) = randomPSD(GLOBAL_RNG, n, λ)
+
+
+"""
+    samplePSD([rng = GLOBAL_RNG,] K, n, λ=1)
+
+Generate `k` rnadom `n×n` positive definite matrices with
+i.i.d. exponentially distributed eigenvalues.
+
+### Arguments
+ - `K` - Number of samples
+ - `n` - Dimensionality of the matrix
+ - `λ` - Exponential distribution parameter
+
+### Returns
+An `n×n×K` array representing `K` random matrices
+"""
+function samplePSD(rng, K, n, λ=1)
+    out = zeros(n,n,K)
+    for i in 1:K
+        out[:,:,i] = randomPSD(rng, n, λ)
+    end
+    return out
+end
+
+samplePSD(K, n, λ=1) = samplePSD(GLOBAL_RNG, K, n, λ)
 
 
 #################################################
