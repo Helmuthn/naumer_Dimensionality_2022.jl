@@ -48,27 +48,50 @@ end
     
 end
 
-@testset "updateFisherInformation" begin
+@testset "updateCRLB" begin
 
     # Identity Jacobian, Identity FIM
-    information  = [1.0 0.0
+    crlb         = [1.0 0.0
                     0.0 1.0]
-    action = [1.0; 0]
+
+    action       = [1.0; 0]
+
     jacobian     = [1.0 0.0
                     0.0 1.0]
     σ² = 1.0
 
-    new_info = updateFisherInformation(information, action, jacobian, σ²)
+    new_info = updateCRLB(crlb, action, jacobian, σ²)
     @test new_info ≈ [0.5 0.0; 0.0 1.0]
 
     # Scale Second Eigenvalue, same setup
     jacobian     = [1.0 0.0
                     0.0 0.5]
-    new_info = updateFisherInformation(information, action, jacobian, σ²)
+    new_info = updateCRLB(crlb, action, jacobian, σ²)
     @test new_info ≈ [0.5 0.0; 0.0 0.25]
 end
 
 @testset "optimalAction_NearestNeighbor" begin
+
+    # Test without value function impact
+    crlb         = [1.0 0.0;
+                    0.0 5.0]
+
+    actionSpace  = [[1.0, 0.0], [0.0, 1.0]]
+
+    jacobian     = [1.0 0.0
+                    0.0 1.0]
+    σ² = 1.0
+
+    samples = zeros(2,2,2)
+    samples[:,:,1] = [0.5 0.0;
+                      0.0 5.0 ]
+
+    samples[:,:,2] = [1.0 0.0;
+                      0.0 0.8 ]
+    values =  [5.5,1.8]
+
+    action = optimalAction_NearestNeighbor(crlb, actionSpace, samples, values, jacobian, σ²)
+    @test action == 2
 
 end
 

@@ -2,7 +2,7 @@
 #
 # The functions in this file could be applied to real data.
 
-using LinearAlgebra: qr, Diagonal
+using LinearAlgebra: qr, Diagonal, tr
 using Random: MersenneTwister, randexp
 using EllipsisNotation
 
@@ -116,10 +116,10 @@ end
 ################# POMDP Tools ###################
 #################################################
 
-export updateFisherInformation, optimalAction_NearestNeighbor, valueUpdate_NearestNeighbor
+export updateCRLB, optimalAction_NearestNeighbor, valueUpdate_NearestNeighbor
 
 """
-    updateFisherInformation(    information, 
+    updateFisherInformation(    crlb, 
                                 action, 
                                 jacobian,
                                 σ²)
@@ -128,7 +128,7 @@ Updates the Fisher information based on the Jacobian of the
 flow and the current measurement under Gaussian noise.
 
 ### Arguments
- - `information`- Previous Fisher information matrix
+ - `crlb`- Previous Fisher information matrix
  - `action`     - Measurement vector
  - `jacobian`   - Jacobian of flow for current timestep
  - `σ²`         - Measurement variance
@@ -136,12 +136,13 @@ flow and the current measurement under Gaussian noise.
 ### Returns
 Updated Fisher Information
 """
-function updateFisherInformation(information, action, jacobian, σ²)
-	return jacobian * inv(inv(information) + action * action'/σ²) * jacobian'
+function updateCRLB(crlb, action, jacobian, σ²)
+	return jacobian * inv(inv(crlb) + action * action'/σ²) * jacobian'
 end
 
+
 """
-    optimalAction_NearestNeighbor(  information, actionSpace, 
+    optimalAction_NearestNeighbor(  crlb, actionSpace, 
                                     samples, values, 
                                     jacobian)
 
@@ -149,7 +150,7 @@ Computes the optimal action for a given state based on the current
 nearest neighbor approximation of the value function.
 
 ### Arguments
- - `information`- Current Fisher information
+ - `crlb`       - Current Cramér-Rao bound
  - `actionSpace`- Action Space (finite)
  - `samples`    - Sample locations in value function
  - `values`     - Sample evaluations of value function
@@ -158,14 +159,15 @@ nearest neighbor approximation of the value function.
 ### Returns
 The action that minimizes the Cramér-Rao bound
 """
-function optimalAction_NearestNeighbor(information, actionSpace, samples, values, jacobian)
+function optimalAction_NearestNeighbor( crlb, actionSpace, 
+                                        samples, values, jacobian, σ²)
 
 	vals = zeros(length(actionSpace))
 
 	for i in 1:length(actionSpace)
 
-		new_state   = updateFisherInformation(state, actionSpace[i], jacobian)
-		vals[i]     = nearestNeighbor(new_state, samples, values)
+		new_crlb  = updateCRLB(crlb, actionSpace[i], jacobian, σ²)
+        vals[i]   = nearestNeighbor(new_crlb, samples, values)
 
 	end
 	return findmin(vals)[2]
@@ -173,7 +175,7 @@ end
 
 
 """ 
-    valueUpdate_NearestNeighbor(   information, 
+    valueUpdate_NearestNeighbor(   crlb, 
                                    γ, 
                                    jacobian, 
                                    actionSpace, 
@@ -184,7 +186,7 @@ CRLB at a given current Fisher information under the
 nearest neighbor value approximation for a given point.
 
 ### Arguments
- - `information`- Current Fisher information
+ - `crlb`       - Current Cramér-Rao bound
  - `γ`          - Discount factor
  - `jacobian`   - Jacobian of flow for current timestep
  - `actionSpace`- Action Space (finite)
@@ -194,7 +196,7 @@ nearest neighbor value approximation for a given point.
 ### Returns
 The updated value function approximation evaluated at `information`
 """
-function valueUpdate_NearestNeighbor(   information, 
+function valueUpdate_NearestNeighbor(   crlb, 
                                         γ, 
                                         jacobian, 
                                         actionSpace, 
@@ -202,7 +204,7 @@ function valueUpdate_NearestNeighbor(   information,
 
 	update_vals = zeros(length(actionSpace))
 	for i in 1:length(actionSpace)
-		new_state = updateState(state, actionSpace[i], jacobian)
+		new_state = updateState(crlb, actionSpace[i], jacobian)
 		update_vals[i] = nearestNeighbor(new_state, samples,values)
 	end
 	return γ * minimum(update_vals) + tr(state)
@@ -229,7 +231,7 @@ The updated value function approximation values for all points in `samples`.
 
 ### Notes
 This function is multithreaded, remember to give Julia multiple threads when launching with
-`julia -t NTHREADS`, where NTHREADS is the desired number of threads.
+`julia -t NTHREADS`, where `NTHREADS` is the desired number of threads.
 """
 function valueIterate(γ, jacobian, actionSpace, samples, values)
 	new_out = zeros(length(values))
