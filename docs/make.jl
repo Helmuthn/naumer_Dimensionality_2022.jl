@@ -19,6 +19,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/helmuthn/naumer_ICML_2022.jl",
+    repo="helmuthn/naumer_ICML_2022.jl",
     devbranch="main",
 )
