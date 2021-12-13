@@ -125,3 +125,23 @@ end
     truth = 6.0 + 0.9
     @test update ≈ truth
 end
+
+@testset "valueIterate_NearestNeighbor" begin
+    actionSpace  = [[1.0, 0.0], [0.0, 1.0]]
+
+    jacobian     = [1.0 0.0
+                    0.0 1.0]
+    σ² = 1.0
+    γ = 0.5
+
+    samples = zeros(2,2,1)
+    samples[:,:,1] = [1.0 0.0;
+                      0.0 1.0 ]
+
+
+    values =  [2.0]
+
+    new_values = valueIterate_NearestNeighbor(γ, jacobian, actionSpace, samples, values, σ²)
+
+    @test new_values[1] ≈ 3.0
+end

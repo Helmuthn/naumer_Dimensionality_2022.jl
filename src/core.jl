@@ -101,7 +101,7 @@ end
 ################# POMDP Tools ###################
 #################################################
 
-export updateCRLB, optimalAction_NearestNeighbor, valueUpdate_NearestNeighbor
+export updateCRLB, optimalAction_NearestNeighbor, valueUpdate_NearestNeighbor, valueIterate_NearestNeighbor
 
 """
     updateFisherInformation(    crlb, 
@@ -204,11 +204,13 @@ end
 
 
 """
-    ValueIterate_NearestNeighbor(γ, jacobian, actionSpace, samples, values)
+    valueIterate_NearestNeighbor(γ, jacobian, actionSpace, samples, values)
 
 Iterates the discounted Bellman equation for minimizing the
 CRLB at a given current Fisher information under the
 nearest neighbor value approximation.
+
+Assumes linear measurement under additive Gaussian noise.
 
 ### Arguments
  - `γ`          - Discount factor
@@ -216,6 +218,7 @@ nearest neighbor value approximation.
  - `actionSpace`- Action Space (finite)
  - `samples`    - Sample locations in value function
  - `values`     - Sample evaluations of value function
+ - `σ²`         - Measurement variance
 
 ### Returns
 The updated value function approximation values for all points in `samples`.
@@ -224,14 +227,15 @@ The updated value function approximation values for all points in `samples`.
 This function is multithreaded, remember to give Julia multiple threads when launching with
 `julia -t NTHREADS`, where `NTHREADS` is the desired number of threads.
 """
-function valueIterate(γ, jacobian, actionSpace, samples, values)
+function valueIterate_NearestNeighbor(γ, jacobian, actionSpace, samples, values, σ²)
 	new_out = zeros(length(values))
 	Threads.@threads for i in 1:length(values)
 		new_out[i] = valueUpdate_NearestNeighbor(   view(samples,:,:,i), 
                                                     γ, 
                                                     jacobian, 
                                                     actionSpace, 
-                                                    samples, values)
+                                                    samples, values,
+                                                    σ²)
 
 	end
 	return new_out
