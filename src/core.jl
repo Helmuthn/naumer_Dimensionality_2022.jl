@@ -62,7 +62,18 @@ end
 """
     min_dist(v, D)
 
+Finds the minimum distance vector in `D` from `v`.
+Allows multidimensional array representation, 
+assumes last axis of `D` indexes the vectors.
 
+### Arguments
+ - `v` - Vector being compared
+ - `D` - Set of vectors
+
+### Returns
+    (out, out_ind)
+
+Where `out` is the closest vector, and `out_ind` is the position.
 """
 function min_dist(v,D)
 	alloc = zeros(size(v))
