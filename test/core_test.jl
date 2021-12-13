@@ -55,6 +55,20 @@ end
     
 end
 
+@testset "buildNearestNeighbor" begin
+    # 1D test
+    samples = -1:0.1:1
+    values = buildNearestNeighbor(sin, samples)
+    @test values == sin.(samples) 
+
+    # 2D test
+    samples = [1 2;
+               2 1]
+    f(x) = x[2] - x[1]
+    values = buildNearestNeighbor(f,samples)
+    @test values == [1,-1]
+end
+
 @testset "updateCRLB" begin
 
     # Identity Jacobian, Identity FIM

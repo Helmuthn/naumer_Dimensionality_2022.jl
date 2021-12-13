@@ -64,7 +64,7 @@ samplePSD(K, n, λ=1) = samplePSD(GLOBAL_RNG, K, n, λ)
 ################ Interpolation ##################
 #################################################
 
-export nearestNeighbor
+export nearestNeighbor, buildNearestNeighbor
 
 """
     min_dist(v, D)
@@ -101,6 +101,7 @@ function min_dist(v,D)
 	return out, out_ind
 end
 
+
 """
     nearestNeighbor(target, samples, values)
 
@@ -120,6 +121,30 @@ function nearestNeighbor(target, samples, values)
 	return values[i]
 end
 
+
+"""
+    buildNearestNeighbor(f, samples)
+
+Evaluates a function `f` at a set of chosen locations
+to build the nearest neighbor approximation.
+Glorified broadcast function.
+
+The last axis of `samples` is assumed to index the sample locations.
+
+### Arguments
+ - `f`      - The function to be approximated
+ - `samples`- Set of representation points
+
+### Returns
+An array of values at the given sample locations.
+"""
+function buildNearestNeighbor(f, samples)
+    values = zeros(size(samples)[end])
+    Threads.@threads for i in 1:size(samples)[end]
+        values[i] = f(samples[..,i])
+    end
+    return values
+end
 
 
 #################################################
