@@ -81,6 +81,9 @@ assumes last axis of `D` indexes the vectors.
     (out, out_ind)
 
 Where `out` is the closest vector, and `out_ind` is the position.
+
+### Notes
+This function is not exported
 """
 function min_dist(v,D)
 	alloc = zeros(size(v))
