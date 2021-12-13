@@ -22,7 +22,30 @@ using LinearAlgebra: eigvals
 end
 
 @testset "nearestNeighbor" begin
+    # 1D form
+    target = 1.1
+    samples = [1.0,2.0]
+    values = [-1,1]
+    @test nearestNeighbor(target,samples,values) == -1
+    @test nearestNeighbor(target+1,samples,values) == 1
 
+    # 2D form
+    target = [1.0,2.0]
+    samples = [ 1.1 2.0;
+                2.0 1.1 ]
+    values = [-1, 1]
+    @test nearestNeighbor(target,samples,values) == -1
+
+    # Matrix form
+    target = [1.0 0.0;
+              0.0 1.0 ]
+    samples = zeros(2,2,2)
+    samples[:,:,1] = [ 1.2 0.1;
+                      -0.1 0.9 ]
+    values = [-1, 1]
+
+    @test nearestNeighbor(target,samples,values) == -1
+    
 end
 
 @testset "updateFisherInformation" begin

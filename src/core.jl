@@ -4,6 +4,7 @@
 
 using LinearAlgebra: qr, Diagonal
 using Random: MersenneTwister, randexp
+using EllipsisNotation
 
 GLOBAL_RNG = MersenneTwister()
 
@@ -44,6 +45,42 @@ randomPSD(n, λ=1) = randomPSD(GLOBAL_RNG, n, λ)
 export nearestNeighbor
 
 """
+    squared_distance(v,w)
+
+Returns the squared Euclidean distance between
+two finite-dimensional vectors `v` and `w`.
+
+### Note
+Applies to multidimensional arrays as the distance
+between the vectorized forms of the arrays.
+"""
+function squared_distance(v,w)
+	return sum(abs2,v .- w)
+end
+
+
+"""
+    min_dist(v, D)
+
+
+"""
+function min_dist(v,D)
+	alloc = zeros(size(v))
+	alloc .= v.- @view D[..,1]
+	out = sum(abs2,alloc)
+	out_ind = 1
+    @inbounds for i in 2:size(D)[end]
+		alloc .= v .- @view D[..,i]
+		d = sum(abs2,alloc)
+		if d < out
+			out = d
+			out_ind = i
+		end
+	end
+	return out, out_ind
+end
+
+"""
     nearestNeighbor(target, samples, values)
 
 Approximates the value at `target` with the value at
@@ -59,7 +96,7 @@ Approximate value at `target`
 """
 function nearestNeighbor(target, samples, values)
 	~, i = min_dist(target, samples)
-	return value_lst[i]
+	return values[i]
 end
 
 
