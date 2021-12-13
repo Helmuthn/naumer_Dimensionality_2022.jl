@@ -10,6 +10,15 @@ using LinearAlgebra: eigvals
 
     # Check for PSD
     @test minimum(eigvals(random_matrix)) >= 0
+
+    # Check eigenvalue mean for appropriate scaling
+    total = 0
+    for i in 1:10000
+        random_matrix = randomPSD(1,0.5)
+        total += eigvals(random_matrix)[1]
+    end
+    total /= 10000
+    @test isapprox(total, 2, atol=1e-1)
 end
 
 @testset "nearestNeighbor" begin
