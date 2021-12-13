@@ -38,7 +38,7 @@ randomPSD(n, λ=1) = randomPSD(GLOBAL_RNG, n, λ)
 """
     samplePSD([rng = GLOBAL_RNG,] K, n, λ=1)
 
-Generate `k` rnadom `n×n` positive definite matrices with
+Generate `k` random `n×n` positive definite matrices with
 i.i.d. exponentially distributed eigenvalues.
 
 ### Arguments

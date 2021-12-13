@@ -24,7 +24,7 @@ end
 @testset "samplePSD" begin
     dataset = samplePSD(2,3)
 
-    # Becuase this just call randomPSD, just check dimensionality
+    # Because this just call randomPSD, just check dimensionality
     @test size(dataset) == (3,3,2)
 end
 
