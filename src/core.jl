@@ -126,7 +126,7 @@ flow and the current measurement under Gaussian noise.
 Updated Fisher Information
 """
 function updateFisherInformation(information, action, jacobian, σ²)
-	return jacobian * inv(inv(state) + action * action'/σ²) * jacobian'
+	return jacobian * inv(inv(information) + action * action'/σ²) * jacobian'
 end
 
 """

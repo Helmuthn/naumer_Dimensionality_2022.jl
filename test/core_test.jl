@@ -50,6 +50,22 @@ end
 
 @testset "updateFisherInformation" begin
 
+    # Identity Jacobian, Identity FIM
+    information  = [1.0 0.0
+                    0.0 1.0]
+    action = [1.0; 0]
+    jacobian     = [1.0 0.0
+                    0.0 1.0]
+    σ² = 1.0
+
+    new_info = updateFisherInformation(information, action, jacobian, σ²)
+    @test new_info ≈ [0.5 0.0; 0.0 1.0]
+
+    # Scale Second Eigenvalue, same setup
+    jacobian     = [1.0 0.0
+                    0.0 0.5]
+    new_info = updateFisherInformation(information, action, jacobian, σ²)
+    @test new_info ≈ [0.5 0.0; 0.0 0.25]
 end
 
 @testset "optimalAction_NearestNeighbor" begin
