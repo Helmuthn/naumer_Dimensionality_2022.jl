@@ -280,12 +280,12 @@ This function is multithreaded, remember to give Julia multiple threads when lau
 function valueIterate_NearestNeighbor(γ, jacobian, actionSpace, samples, values, σ²)
 	new_out = zeros(length(values))
 	Threads.@threads for i in 1:length(values)
-		new_out[i] = valueUpdate_NearestNeighbor(   view(samples,:,:,i), 
-                                                    γ, 
-                                                    jacobian, 
-                                                    actionSpace, 
-                                                    samples, values,
-                                                    σ²)
+		new_out[i] = valueUpdate_NearestNeighbor(  view(samples,:,:,i), 
+                                                           γ, 
+                                                           jacobian, 
+                                                           actionSpace, 
+                                                           samples, values,
+                                                           σ²)
 
 	end
 	return new_out
