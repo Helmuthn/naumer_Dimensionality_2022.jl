@@ -3,6 +3,7 @@
 ############################
 ####### Basic System #######
 ############################
+export differential, flow, flowJacobian
 
 abstract type AbstractSystem{T} end;
 
@@ -60,14 +61,20 @@ function flowJacobian(system::AbstractSystem, τ, x::Vector)
     error("Function not implemented for $(typeof(system))")
 end;
 
-export differential, flow, flowJacobian
 
 #############################
 ###### Linear Systems #######
 #############################
 export LinearSystem
 
-# Define a struct containing the relevant details
+"""
+    LinearSystem{T} <: AbstractSystem{T}
+
+Defines a linear system dx/dt = Ax
+
+### Fields
+ - `dynamics::Matrix{T}` - Matrix defining dynamics
+"""
 struct LinearSystem{T} <: AbstractSystem{T}
     dynamics::Matrix{T}
 end
@@ -83,5 +90,11 @@ end
 function flowJacobian(x::Vector, τ, system::LinearSystem)
     return exp(τ * system.dynamics)
 end
+
+
+#############################
+######## Van Der Pol ########
+#############################
+export VanDerPolSystem
 
 
