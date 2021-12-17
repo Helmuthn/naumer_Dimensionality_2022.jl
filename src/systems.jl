@@ -20,7 +20,9 @@ system evaluated at a given point.
 The derivative of the trajectory of the system with respect to time
 evaluated at a fixed point `x`.
 """
-function differential end;
+function differential(system::AbstractSystem, x::Vector)
+    error("Function not implemented for $(typeof(system))")
+end;
 
 """
     flow(system::AbstractSystem, τ, x::Vector)
@@ -35,7 +37,9 @@ Advances the state of a dynamical `system` from state `x` by time `τ`.
 ### Returns
 The state advanced by `τ` unties of time
 """
-function flow end;
+function flow(system::AbstractSystem, τ, x::Vector)
+    error("Function not implemented for $(typeof(system))")
+end;
 
 """
     flowJacobian(system::AbstractSystem, τ, x::Vector)
@@ -52,7 +56,9 @@ around an initial condition `x`.
 Jacobian matrix of the flow representing the derivative with respect to the
 initial state `x`.
 """
-function flowJacobian end;
+function flowJacobian(system::AbstractSystem, τ, x::Vector)
+    error("Function not implemented for $(typeof(system))")
+end;
 
 export differential, flow, flowJacobian
 
