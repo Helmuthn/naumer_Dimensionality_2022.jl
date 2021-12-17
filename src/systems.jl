@@ -9,7 +9,7 @@ abstract type AbstractSystem{T} end;
 """
     differential(system::AbstractSystem, x::Vector)
 
-Computes the time derivative of a given continous-time dynamical
+Computes the time derivative of a given continuous-time dynamical
 system evaluated at a given point.
 
 ### Arguments
@@ -30,12 +30,12 @@ end;
 Advances the state of a dynamical `system` from state `x` by time `τ`.
 
 ### Arguments
- - `system` - Continous-Time Dynamical System
+ - `system` - Continuous-Time Dynamical System
  - `τ`      - Advancement time
  - `x`      - Initial state
 
 ### Returns
-The state advanced by `τ` unties of time
+The state advanced by `τ` units of time
 """
 function flow(system::AbstractSystem, τ, x::Vector)
     error("Function not implemented for $(typeof(system))")
@@ -48,7 +48,7 @@ Computes the Jacobian of the flow of a `system` for `τ` units of time
 around an initial condition `x`.
 
 ### Arguments
- - `system` - Continous-Time Dynamical System
+ - `system` - Continuous-Time Dynamical System
  - `τ`      - Advancement time
  - `x`      - Initial State
 
