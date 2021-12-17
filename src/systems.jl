@@ -21,9 +21,7 @@ system evaluated at a given point.
 The derivative of the trajectory of the system with respect to time
 evaluated at a fixed point `x`.
 """
-function differential(system::AbstractSystem, x::Vector)
-    error("Function not implemented for $(typeof(system))")
-end;
+function differential end;
 
 """
     flow(system::AbstractSystem, τ, x::Vector)
@@ -38,9 +36,7 @@ Advances the state of a dynamical `system` from state `x` by time `τ`.
 ### Returns
 The state advanced by `τ` units of time
 """
-function flow(system::AbstractSystem, τ, x::Vector)
-    error("Function not implemented for $(typeof(system))")
-end;
+function flow end;
 
 """
     flowJacobian(system::AbstractSystem, τ, x::Vector)
@@ -57,9 +53,7 @@ around an initial condition `x`.
 Jacobian matrix of the flow representing the derivative with respect to the
 initial state `x`.
 """
-function flowJacobian(system::AbstractSystem, τ, x::Vector)
-    error("Function not implemented for $(typeof(system))")
-end;
+function flowJacobian end;
 
 
 #############################
@@ -96,5 +90,19 @@ end
 ######## Van Der Pol ########
 #############################
 export VanDerPolSystem
+
+struct VanDerPolSystem{T} <: AbstractSystem{T}
+    μ::T
+end
+
+function differential(system::VanDerPolSystem, x::Vector)
+    out = zeros(2)
+    out[1] = x[2]
+    out[2] = system.μ * (1 - x[1]^2) * x[2] - x[1]
+end
+
+#function flow(x::vector, τ, system::VanDerPolSystem)
+#
+#end
 
 
