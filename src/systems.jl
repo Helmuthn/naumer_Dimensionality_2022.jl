@@ -3,7 +3,7 @@
 ############################
 ####### Basic System #######
 ############################
-export differential, flow, flowJacobian
+export differential, flow, flowJacobian, dimension
 
 abstract type AbstractSystem{T} end;
 
@@ -55,6 +55,13 @@ initial state `x`.
 """
 function flowJacobian end;
 
+"""
+    dimension(system::AbstractSystem)
+
+Returns the dimensionality of the system.
+"""
+function dimension end;
+
 
 #############################
 ###### Linear Systems #######
@@ -83,6 +90,10 @@ end
 
 function flowJacobian(x::Vector, τ, system::LinearSystem)
     return exp(τ * system.dynamics)
+end
+
+function dimension(x::LinearSystem)
+    return size(x.dynamics)[1]
 end
 
 

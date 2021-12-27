@@ -60,6 +60,39 @@ end
 samplePSD(K, n, λ=1) = samplePSD(GLOBAL_RNG, K, n, λ)
 
 
+"""
+    sampleStateSpace(system::AbstractSystem, trajectorySampleCount, timestepCount, burnin, τ)
+
+Generates `stateSampleCount` random samples of the statespace.
+For now, initializes according to a high-variance Gaussian distribution,
+then steps the system forward in time to shape the density according to the system.
+
+A small i.i.d. Gaussian random vector is added after each step to avoid degeneracy in value iteration.
+
+### Arguments
+ - `system`                 - Chosen dynamical system
+ - `trajectorySampleCount`  - Number of trajectory samples
+ - `timestepCount`          - Number of timesteps per trajectory
+ - 'burnin`                 - Initial time advancement
+ - `τ`                      - timestep size
+
+### Returns
+A 2D array representing `trajectorySampleCount * timestepCount` samples, where columns represent the state.
+"""
+function sampleStateSpace(system::AbstractSystem, trajectorySampleCount, timestepCount, burnin, τ)
+    out = zeros(dimension(system), stateSampleCount)
+    for i in 1:trajectorySampleCount
+        state = flow(system, burnin, 5*randn(dimension(system))) 
+        for j in 1:timestepCount
+            index = j + (i-1) * timestepCount
+            out[:,i] .= state
+            state .= flow(system, τ, state) + .25 * randn(dimension(system))
+        end
+    end
+    return out
+end
+
+
 #################################################
 ################ Interpolation ##################
 #################################################
@@ -289,4 +322,133 @@ function valueIterate_NearestNeighbor(γ, jacobian, actionSpace, samples, values
 
 	end
 	return new_out
+end
+
+"""
+    valueIterate_NearestNeighbor_precompute!(out, values, transitionMap, psdSamples, γ)
+
+Completes one step of value iteration using precomputed transition maps. 
+
+### Arguments
+ - `out`              - Output Array (new value function approximation)
+ - `values`           - Current value function approximation
+ - `transitionMap`    - Transitions of state/crlb based on the action
+ - `psdSamples`       - CRLB samples
+ - `γ`                - Discount Factor
+ - `stateSampleCount` - Number of state-space samples (for indexing psdSamples)
+
+### Returns
+Nothing 
+
+### Notes
+This function is multithreaded
+"""
+function valueIterate_NearestNeighbor_precompute!(  out,
+                                                    values,
+                                                    transitionMap,
+                                                    psdSamples,
+                                                    γ,
+                                                    stateSampleCount)
+
+    Threads.@threads for i in 1:length(values)
+        crlbIndex = ((i-1) % stateSampleCount) + 1
+        crlb = @view psdSamples[:,:,crlbIndex]
+        updatedStates = @view transitionMap[:,i]
+
+        futureValue = minimum(values[updatedStates])
+        out[i] = tr(crlb) + γ * futureValue
+    end
+end
+
+#################################################
+################# POMDP Tools ###################
+#################################################
+export ValueFunctionApproximation_NearestNeighbor_precompute
+
+"""
+    ValueFunctionApproximation_NearestNeighbor_precompute(  system::AbstractSystem, 
+                                                            τ,
+                                                            γ, 
+                                                            actionSpace, 
+                                                            λ = 1,
+                                                            psdSampleCount = 1000,
+                                                            stateSampleCount = 1000,
+                                                            σ² = 1,
+                                                            max_iterations=1000)
+
+Approximates the value function in the discounted cost optimal sampling problem.
+Requires a model of the system dynamics, timestep, discount-factor, and a discrete action space.
+
+Precomputes all state transitions for all actions. Uses significant memory in exchange for
+less expensive computation.
+
+Computes `max_iterations` steps of value iteration.
+
+### Arguments
+ - `system` - Representation of the dynamical system
+ - `τ`                  - Timestep size
+ - `γ`                  - Discount Factor
+ - `actionSpace`        - Vector of possible actions
+ - `λ`                  - CRLB space sampling parameter
+ - `psdSampleCount`     - Number of covariance-matrix samples
+ - `stateSampleCount`   - Number of state-space samples
+ - `σ²`                 - Measurement variance
+ - `max_iterations`     - Maximum number of iterations
+
+### Returns
+    (values, psdSamples, stateSamples)
+
+ - `values`         - Output of value function at sample points 
+ - `psdSamples`     - CRLB sample locations
+ - `stateSamples`   - State sample locations
+
+### Note
+
+`values` is a 1D array indexed as crlbIndex + psdSampleCount * (stateIndex - 1)
+"""
+function ValueFunctionApproximation_NearestNeighbor_precompute( system::AbstractSystem, 
+                                                                τ,
+                                                                γ, 
+                                                                actionSpace, 
+                                                                λ = 1,
+                                                                psdSampleCount = 1000,
+                                                                stateSampleCount = 1000,
+                                                                σ² = 1,
+                                                                max_iterations=1000)
+
+    # Discretize the space
+    psdSamples   = samplePSD(psdSampleCount, dimension(system), λ) 
+    stateSamples = sampleStateSpace(system, stateSampleCount)
+    values = rand(psdSampleCount*stateSampleCount)
+    updateValues = copy(values)
+
+    # Precompute the nearest-neighbor maps based on actions
+    systemMap = zeros(length(actionSpace), psdSampleCount*stateSampleCount)
+    Threads.@threads for i in 1:stateSampleCount
+        # Compute flow and jacobian
+        nextState = flow(system, τ, stateSamples[:,i])
+        jacobian = flowJacobian(system, τ, stateSamples[:,i])
+
+        # Find nearest state
+        ~, nearestState = min_dist(nextState, stateSamples)
+
+        for j in 1:psdSampleCount
+            crlbInv = inv(psdSamples[:,:,j])
+            for k in 1:length(actionSpace)
+                # Compute Updated CRLB
+                nextCRLB = jacobian * inv(crlbInv + actionSpace[k] * actionSpace[k]') * jacobian'
+                ~, nearestJacobian = min_dist(nextCRLB, psdSamples)
+                
+                systemMap[k, (i-1)*psdSampleCount + j] = (nearestState-1)*psdSampleCount + nearestJacobian
+            end
+        end
+    end
+
+    # Apply Value Iteration 
+    for i in 1:max_iterations
+        valueIterate_NearestNeighbor_precompute!(updateValues, values, systemMap, psdSamples, γ)
+        values .= updateValues
+    end
+
+    return values, psdSamples, stateSamples 
 end
