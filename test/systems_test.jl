@@ -19,3 +19,27 @@ using naumer_ICML_2022, Test
         @test flowJacobian(x, τ, system) ≈ [exp(2.0) 0; 0 exp(1.0)]
     end
 end
+
+
+
+@testset "HopfSystem" begin
+
+    λ = 1
+    b = -1
+    system = HopfSystem(λ, b)
+    x = [0.0, 1.0]
+    τ = 2π
+
+    @testset "differential" begin
+        @test isapprox(differential(system, x), [-1.0, 0.0], atol=1e-5)
+    end
+
+    @testset "flow" begin
+        @test isapprox(flow(x, τ, system), [0.0, 1.0], atol=1e-5)
+    end
+
+    @testset "flowJacobian" begin
+        jacobian = flowJacobian(x, τ, system)
+        @test isapprox(jacobian, [1.0 0; 0 0.0], atol=1e-4)
+    end
+end

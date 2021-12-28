@@ -142,6 +142,7 @@ function differential(system::HopfSystem, x::Vector)
     nonlinear = system.λ + system.b * (x[1]^2 + x[2]^2)
     out[1] = x[1] * nonlinear - x[2]
     out[2] = x[2] * nonlinear + x[1]
+    return out
 end
 
 function hopfDynamics!(du, u, p, t)
@@ -164,6 +165,7 @@ function flowJacobian(x::Vector, τ, system::HopfSystem)
     function solvesystem(init)
         prob = remake(problem, u0=init)
         sol = solve(prob, Tsit5(), reltol=1e-8, save_everystep=false)
+        return sol[end]
     end
 
     return ForwardDiff.jacobian(solvesystem, x)
