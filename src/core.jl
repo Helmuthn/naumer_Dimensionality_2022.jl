@@ -14,7 +14,7 @@ using EllipsisNotation
 export randomPSD, samplePSD
 
 """
-    randomPSD([rng = GLOBAL_RNG,] n, λ=1)
+    randomPSD([rng = GLOBAL_RNG,] n, λ)
 
 Generate a random `n×n` positive definite matrix with i.i.d.
 exponentially distributed eigenvalues.
@@ -36,7 +36,7 @@ randomPSD(n, λ) = randomPSD(GLOBAL_RNG, n, λ)
 
 
 """
-    samplePSD([rng = GLOBAL_RNG,] K, n, λ=1)
+    samplePSD([rng = GLOBAL_RNG,] K, n, λ)
 
 Generate `k` random `n×n` positive definite matrices with
 i.i.d. exponentially distributed eigenvalues.
