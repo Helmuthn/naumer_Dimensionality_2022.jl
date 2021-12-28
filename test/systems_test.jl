@@ -21,6 +21,25 @@ using naumer_ICML_2022, Test
 end
 
 
+@testset "VanDerPolSystem" begin
+
+    μ = 1
+    system = VanDerPolSystem(μ)
+    x = [0.0, 1.0]
+    τ = 1
+
+    @testset "differential" begin
+        @test isapprox(differential(system, x), [1.0, 1.0], atol=1e-5)
+    end
+
+    @testset "flow" begin
+
+    end
+
+    @testset "flowJacobian" begin
+
+    end
+end
 
 @testset "HopfSystem" begin
 

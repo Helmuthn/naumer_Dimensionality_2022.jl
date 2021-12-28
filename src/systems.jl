@@ -116,12 +116,33 @@ function differential(system::VanDerPolSystem, x::Vector)
     out = zeros(2)
     out[1] = x[2]
     out[2] = system.μ * (1 - x[1]^2) * x[2] - x[1]
+    return out
 end
 
-#function flow(x::vector, τ, system::VanDerPolSystem)
-#
-#end
+function vanderpolDynamics!(du, u, p, t)
+    x, y = u
+    μ = p
+    du[1] = y
+    du[2] = μ * (1 - x^2) * y - x
+end
 
+function flow(x::Vector, τ, system::VanDerPolSystem)
+    problem = ODEProblem(vanderpolDynamics!, x, (0.0, τ), system.μ)
+    sol = solve(problem, Tsit5(), reltol=1e-8, save_everystep=false)
+    return sol[end]
+end
+
+function flowJacobian(x::Vector, τ, system::VanDerPolSystem)
+    problem = ODEProblem(hopfDynamics!, x, (0.0, τ), system.μ)
+
+    function solvesystem(init)
+        prob = remake(problem, u0=init)
+        sol = solve(prob, Tsit5(), reltol=1e-8, save_everystep=false)
+        return sol[end]
+    end
+
+    return ForwardDiff.jacobian(solvesystem, x)
+end
 
 #############################
 ######## Hopf System ########
