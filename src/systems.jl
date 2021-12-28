@@ -1,4 +1,6 @@
 # Dynamical system definitions used in the manuscript
+using DifferentialEquations: Tsit5, solve, ODEProblem, remake
+using ForwardDiff
 
 ############################
 ####### Basic System #######
@@ -92,8 +94,8 @@ function flowJacobian(x::Vector, τ, system::LinearSystem)
     return exp(τ * system.dynamics)
 end
 
-function dimension(x::LinearSystem)
-    return size(x.dynamics)[1]
+function dimension(system::LinearSystem)
+    return size(system.dynamics)[1]
 end
 
 
@@ -104,6 +106,10 @@ export VanDerPolSystem
 
 struct VanDerPolSystem{T} <: AbstractSystem{T}
     μ::T
+end
+
+function dimension(system::VanDerPolSystem)
+    return 2
 end
 
 function differential(system::VanDerPolSystem, x::Vector)
@@ -117,3 +123,48 @@ end
 #end
 
 
+#############################
+######## Hopf System ########
+#############################
+export HopfSystem
+
+struct HopfSystem{T} <: AbstractSystem{T}
+    λ::T
+    b::T
+end
+
+function dimension(system::HopfSystem)
+    return 2
+end
+
+function differential(system::HopfSystem, x::Vector)
+    out = zeros(2)
+    nonlinear = system.λ + system.b * (x[1]^2 + x[2]^2)
+    out[1] = x[1] * nonlinear - x[2]
+    out[2] = x[2] * nonlinear + x[1]
+end
+
+function hopfDynamics!(du, u, p, t)
+    x, y = u
+    λ, b = p 
+    nonlinear = λ + b * (x^2 + y^2)
+    du[1] = x * nonlinear - y
+    du[2] = y * nonlinear + x
+end
+
+function flow(x::Vector, τ, system::HopfSystem)
+    problem = ODEProblem(hopfDynamics!, x, (0.0, τ), (system.λ, system.b))
+    sol = solve(problem, Tsit5(), reltol=1e-8, save_everystep=false)
+    return sol[end]
+end
+
+function flowJacobian(x::Vector, τ, system::HopfSystem)
+    problem = ODEProblem(hopfDynamics!, x, (0.0, τ), (system.λ, system.b))
+
+    function solvesystem(init)
+        prob = remake(problem, u0=init)
+        sol = solve(prob, Tsit5(), reltol=1e-8, save_everystep=false)
+    end
+
+    return ForwardDiff.jacobian(solvesystem, x)
+end
