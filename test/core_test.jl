@@ -3,7 +3,7 @@ using LinearAlgebra: eigvals
 
 
 @testset "randomPSD" begin
-    random_matrix = randomPSD(3)
+    random_matrix = randomPSD(3, 1)
 
     # Check size is correct
     @test size(random_matrix) == (3,3)
@@ -22,7 +22,7 @@ using LinearAlgebra: eigvals
 end
 
 @testset "samplePSD" begin
-    dataset = samplePSD(2,3)
+    dataset = samplePSD(2,3,1)
 
     # Because this just call randomPSD, just check dimensionality
     @test size(dataset) == (3,3,2)

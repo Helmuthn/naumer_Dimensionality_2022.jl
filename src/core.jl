@@ -26,13 +26,13 @@ exponentially distributed eigenvalues.
 ### Returns
 A random `n×n` matrix
 """
-function randomPSD(rng, n, λ=1)
+function randomPSD(rng, n, λ)
     mat = randn(rng,n,n)
     ortho, ~ = qr(mat)
 	return ortho' * Diagonal(randexp(rng,n)/λ) * ortho
 end
 
-randomPSD(n, λ=1) = randomPSD(GLOBAL_RNG, n, λ)
+randomPSD(n, λ) = randomPSD(GLOBAL_RNG, n, λ)
 
 
 """
@@ -49,7 +49,7 @@ i.i.d. exponentially distributed eigenvalues.
 ### Returns
 An `n×n×K` array representing `K` random matrices
 """
-function samplePSD(rng, K, n, λ=1)
+function samplePSD(rng, K, n, λ)
     out = zeros(n,n,K)
     for i in 1:K
         out[:,:,i] = randomPSD(rng, n, λ)
@@ -57,7 +57,7 @@ function samplePSD(rng, K, n, λ=1)
     return out
 end
 
-samplePSD(K, n, λ=1) = samplePSD(GLOBAL_RNG, K, n, λ)
+samplePSD(K, n, λ) = samplePSD(GLOBAL_RNG, K, n, λ)
 
 
 """
