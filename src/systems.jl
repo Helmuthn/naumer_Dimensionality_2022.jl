@@ -191,3 +191,53 @@ function flowJacobian(x::Vector, τ, system::HopfSystem)
 
     return ForwardDiff.jacobian(solvesystem, x)
 end
+
+#############################
+###### Lorenz System ########
+#############################
+export LorenzSystem
+
+struct LorenzSystem{T} <: AbstractSystem{T}
+    σ::T
+    ρ::T
+    β::T
+end
+
+function dimension(system::LorenzSystem)
+    return 3
+end
+
+function differential(system::LorenzSystem, x::Vector)
+    out = zeros(3)
+    out[1] = system.σ * (x[2] - x[1])
+    out[2] = x[1] * (system.ρ - x[3]) - x[2]
+    out[3] = x[1]*x[2] - system.β * x[3]
+    return out
+end
+
+function lorenzDynamics!(du, u, p, t)
+    x, y, z = u
+    σ, ρ, β = p
+    du[1] = σ * (y - x)
+    du[2] = x * (ρ - z) - y
+    du[3] = x * y - β * z
+end
+
+function flow(x::Vector, τ, system::LorenzSystem)
+    problem = ODEProblem(lorenzDynamics!, x, (0.0, τ), (system.σ, system.ρ, system.β))
+    sol = solve(problem, Tsit5(), reltol=1e-8, save_everystep=false)
+    return sol[end]
+end
+
+function flowJacobian(x::Vector, τ, system::VanDerPolSystem)
+    problem = ODEProblem(lorenzDynamics!, x, (0.0, τ), (system.σ, system.ρ, system.β))
+
+    function solvesystem(init)
+        prob = remake(problem, u0=init)
+        sol = solve(prob, Tsit5(), reltol=1e-8, save_everystep=false)
+        return sol[end]
+    end
+
+    return ForwardDiff.jacobian(solvesystem, x)
+end
+

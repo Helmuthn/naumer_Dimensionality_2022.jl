@@ -7,6 +7,10 @@ using naumer_ICML_2022, Test
     x = [1.0, 1.0]
     τ = 1.0
 
+    @testset "dimension" begin
+        @test dimension(system) == 2
+    end
+
     @testset "differential" begin
         @test differential(system, x) ≈ [2.0, 1.0] 
     end
@@ -27,6 +31,10 @@ end
     system = VanDerPolSystem(μ)
     x = [0.0, 1.0]
     τ = 1
+
+    @testset "dimension" begin
+        @test dimension(system) == 2
+    end
 
     @testset "differential" begin
         @test isapprox(differential(system, x), [1.0, 1.0], atol=1e-5)
@@ -49,6 +57,10 @@ end
     x = [0.0, 1.0]
     τ = 2π
 
+    @testset "dimension" begin
+        @test dimension(system) == 2
+    end
+
     @testset "differential" begin
         @test isapprox(differential(system, x), [-1.0, 0.0], atol=1e-5)
     end
@@ -62,3 +74,32 @@ end
         @test isapprox(jacobian, [1.0 0; 0 0.0], atol=1e-4)
     end
 end
+
+
+@testset "LorenzSystem" begin
+
+    σ = 10.0
+    ρ = 28.0
+    β = 8.0/3.0
+
+    system = LorenzSystem(σ,ρ,β)
+    x = [0.0, 0.0, 1.0]
+    τ = 1
+
+    @testset "dimension" begin
+        @test dimension(system) == 3
+    end
+
+    @testset "differential" begin
+        @test isapprox(differential(system, x), [0.0, 0.0, -8.0/3.0], atol=1e-5)
+    end
+
+    @testset "flow" begin
+
+    end
+
+    @testset "flowJacobian" begin
+
+    end
+end
+
