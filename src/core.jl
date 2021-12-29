@@ -368,7 +368,7 @@ end
 #################################################
 ################# POMDP Tools ###################
 #################################################
-export ValueFunctionApproximation_NearestNeighbor_precompute
+export ValueFunctionApproximation_NearestNeighbor_precompute, NearestNeighbor_OptimalPolicy
 
 """
     ValueFunctionApproximation_NearestNeighbor_precompute(  system::AbstractSystem, 
@@ -463,4 +463,83 @@ function ValueFunctionApproximation_NearestNeighbor_precompute( system::Abstract
     end
 
     return values, psdSamples, stateSamples 
+end
+
+
+"""
+    NearestNeighbor_OptimalPolicy(  state, 
+                                    crlb, 
+                                    system::AbstractSystem, 
+                                    σ²,
+                                    τ, 
+                                    values, 
+                                    psdSamples, 
+                                    stateSamples, 
+                                    actionSpace)
+
+Given a nearest neighbor approximation method for the value function, as well as the current state
+and crlb, returns the optimal action.
+
+### Arguments
+ - `state`        - Current state of the system
+ - `crlb`         - Current CRLB
+ - `system`       - Represntation of the system
+ - `σ²`           - Measurement noise power
+ - `τ`            - Timestep size
+ - `values`       - Value function evaluated at samples
+ - `psdSamples`   - Positive Semidefinite matrix samples
+ - `stateSamples  - Samples in the state-space
+ - `actionSpace`  - Set of possible actions
+
+### Returns
+    (action, index, new_state, new_crlb)
+
+ - `action` - The optimal action
+ - `index`  - The index of the action
+"""
+function NearestNeighbor_OptimalPolicy( state, 
+                                        crlb, 
+                                        system::AbstractSystem, 
+                                        σ²,
+                                        τ, 
+                                        values, 
+                                        psdSamples, 
+                                        stateSamples, 
+                                        actionSpace)
+    # If only one action, return
+    if length(actionSpace) == 1
+        return (actionSpace[1], 1)
+    end
+
+    new_state = flow(state, τ, system)
+    jacobian = flowJacobian(state, τ, system)
+    psdSampleCount = size(psdSamples)[3]
+
+    # First Action eval
+    new_crlb = inv(crlb) + actionSpace[1] * actionSpace[1]' / σ²
+    new_crlb = inv(new_crlb)
+    new_crlb = jacobian * new_crlb * jacobian'
+
+    chosen_crlb = copy(new_crlb)
+
+    ~, crlb_index  = min_dist(new_crlb, psdSamples)
+    ~, state_index = min_dist(new_state, stateSamples)
+    base_index = (state_index-1)*psdSampleCount
+
+    index = 1
+    minvalue = values[base_index + crlb_index]
+    
+    for i in 2:length(actionSpace)
+        new_crlb = inv(crlb) + actionSpace[i] * actionSpace[i]' / σ²
+        new_crlb = inv(new_crlb)
+        new_crlb = jacobian * new_crlb * jacobian'
+        ~, crlb_index  = min_dist(new_crlb, psdSamples)
+
+        if minvalue > values[base_index + crlb_index]
+            index = i
+            mintrace = values[base_index + crlb_index]
+            chosen_crlb = copy(new_crlb)
+        end
+    end
+    return (actionSpace[index], index, new_state, chosen_crlb)
 end
