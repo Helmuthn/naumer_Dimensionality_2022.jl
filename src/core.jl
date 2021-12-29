@@ -424,7 +424,6 @@ function ValueFunctionApproximation_NearestNeighbor_precompute( system::Abstract
                                                                 σ² = 1,
                                                                 max_iterations=50)
 
-    @info("Discretizing the Space")
     # Discretize the space
     stateSampleCount = trajectorySampleCount * timestepSampleCount
     psdSamples   = samplePSD(psdSampleCount, dimension(system), λ) 
@@ -432,7 +431,6 @@ function ValueFunctionApproximation_NearestNeighbor_precompute( system::Abstract
     values = rand(psdSampleCount*stateSampleCount)
     updateValues = copy(values)
 
-    @info("Precomputing transition maps")
     # Precompute the nearest-neighbor maps based on actions
     systemMap = zeros(Int,length(actionSpace), psdSampleCount*stateSampleCount)
     Threads.@threads for i in 1:stateSampleCount
@@ -455,7 +453,6 @@ function ValueFunctionApproximation_NearestNeighbor_precompute( system::Abstract
         end
     end
 
-    @info("Applying Value Iteration")
     # Apply Value Iteration 
     for i in 1:max_iterations
         valueIterate_NearestNeighbor_precompute!(updateValues, values, systemMap, psdSamples, γ, psdSampleCount)
