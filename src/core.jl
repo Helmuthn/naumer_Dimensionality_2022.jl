@@ -240,10 +240,8 @@ function optimalAction_NearestNeighbor( crlb, actionSpace,
 	vals = zeros(length(actionSpace))
 
 	for i in 1:length(actionSpace)
-
 		new_crlb  = updateCRLB(crlb, actionSpace[i], jacobian, σ²)
-        vals[i]   = nearestNeighbor(new_crlb, samples, values)
-
+                vals[i]   = nearestNeighbor(new_crlb, samples, values)
 	end
 	return findmin(vals)[2]
 end
