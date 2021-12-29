@@ -229,7 +229,7 @@ function flow(x::Vector, τ, system::LorenzSystem)
     return sol[end]
 end
 
-function flowJacobian(x::Vector, τ, system::VanDerPolSystem)
+function flowJacobian(x::Vector, τ, system::LorenzSystem)
     problem = ODEProblem(lorenzDynamics!, x, (0.0, τ), (system.σ, system.ρ, system.β))
 
     function solvesystem(init)
