@@ -2,7 +2,7 @@
 #
 # The functions in this file could be applied to real data.
 
-using LinearAlgebra: qr, Diagonal, tr
+using LinearAlgebra: qr, Diagonal, tr, det, svd, eigen
 using Random: MersenneTwister, randexp, GLOBAL_RNG
 using EllipsisNotation
 
@@ -510,9 +510,16 @@ function NearestNeighbor_OptimalPolicy( state,
     jacobian = flowJacobian(state, τ, system)
     psdSampleCount = size(psdSamples)[3]
 
-    # First Action eval
-    new_crlb = inv(crlb) + actionSpace[1] * actionSpace[1]' / σ²
-    new_crlb = inv(new_crlb)
+    # if not invertible, operate in invertible subspace
+    # Project action to be orthogonal to non-invertible subspace
+    S, U = eigen(crlb)
+    nonzero_indices =  abs.(S) .> eps()
+    projection = U[:,nonzero_indices] * U[:,nonzero_indices]'
+    subspace_fisher = U[:,nonzero_indices] * Diagonal(S[nonzero_indices].^-1.0) *  U[:,nonzero_indices]'
+
+    projected_action = projection * actionSpace[1] 
+    Sn, Un   = eigen(subspace_fisher + projected_action * projected_action'/σ²)
+    new_crlb = Un[:,nonzero_indices] * Diagonal(Sn[nonzero_indices].^-1.0) * Un[:,nonzero_indices]'
     new_crlb = jacobian * new_crlb * jacobian'
 
     chosen_crlb = copy(new_crlb)
@@ -525,9 +532,11 @@ function NearestNeighbor_OptimalPolicy( state,
     minvalue = values[base_index + crlb_index]
     
     for i in 2:length(actionSpace)
-        new_crlb = inv(crlb) + actionSpace[i] * actionSpace[i]' / σ²
-        new_crlb = inv(new_crlb)
+        projected_action = projection * actionSpace[i]
+        Sn, Un   = eigen(subspace_fisher + projected_action * projected_action'/σ²)
+        new_crlb = Un[:,nonzero_indices] * Diagonal(Sn[nonzero_indices].^-1.0) * Un[:,nonzero_indices]'
         new_crlb = jacobian * new_crlb * jacobian'
+
         ~, crlb_index  = min_dist(new_crlb, psdSamples)
 
         if minvalue > values[base_index + crlb_index]
