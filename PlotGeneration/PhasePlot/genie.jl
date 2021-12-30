@@ -188,24 +188,6 @@ xlims!(ax4, (-4,4))
 ylims!(ax4, (-4,4))
 
 ##########################################
-########## Generate Streamplot ###########
-##########################################
-@info("Generating Informative Streamplot")
-
-ax5 = Axis(f[1,5], aspect=1,
-            xticklabelsize=tickfontsize, 
-            yticklabelsize=tickfontsize, 
-            yticklabelpad=2,
-            xlabel="x", ylabel = "y",
-            xlabelsize=labelfontsize,
-            ylabelsize=labelfontsize)
-
-streamplot!(ax5,(x,y) -> (Point2f0(informativeVec([x,y]))),-4..4,-4..4,maxsteps=10000, colormap=:seaborn_dark, density=.8)
-
-xlims!(ax5, (-4,4))
-ylims!(ax5, (-4,4))   
-
-##########################################
 ############### Save Plot ################
 ##########################################
 @info("Saving Figure...")
