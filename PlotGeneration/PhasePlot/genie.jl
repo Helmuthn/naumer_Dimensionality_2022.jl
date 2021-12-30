@@ -10,7 +10,7 @@ noto_sans = "./resources/NotoSans-Regular.ttf"
 tickfontsize    = 28
 labelfontsize   = 32
 
-f = Figure(font=noto_sans, resolution=(2000,400))
+f = Figure(font=noto_sans, resolution=(8000,800))
 
 
 ####################################
@@ -128,7 +128,7 @@ end
 results = reshape(results,length(u_grid),length(u_grid))
 
 
-ax3 = Axis( f[1,3], 
+ax3 = Axis( f[2,2], 
             aspect=1,
             xticklabelsize=tickfontsize, 
             yticklabelsize=tickfontsize, 
@@ -170,7 +170,7 @@ Threads.@threads for i in 1:length(u_grid)
 end
 
 
-ax4 = Axis(f[1,4], aspect=1,
+ax4 = Axis(f[2,1], aspect=1,
             xticklabelsize=tickfontsize, 
             yticklabelsize=tickfontsize, 
             yticklabelpad=2,
