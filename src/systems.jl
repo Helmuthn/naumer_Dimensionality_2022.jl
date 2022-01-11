@@ -26,7 +26,7 @@ evaluated at a fixed point `x`.
 function differential end;
 
 """
-    flow(system::AbstractSystem, τ, x::Vector)
+    flow(x::Vector, τ, system::AbstractSystem)
 
 Advances the state of a dynamical `system` from state `x` by time `τ`.
 
@@ -41,7 +41,7 @@ The state advanced by `τ` units of time
 function flow end;
 
 """
-    flowJacobian(system::AbstractSystem, τ, x::Vector)
+    flowJacobian(x::Vector, τ, system::AbstractSystem)
 
 Computes the Jacobian of the flow of a `system` for `τ` units of time 
 around an initial condition `x`.
