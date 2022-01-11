@@ -2,7 +2,7 @@
 #
 # The functions in this file could be applied to real data.
 
-using LinearAlgebra: qr, Diagonal, tr, det, svd, eigen
+using LinearAlgebra: qr, Diagonal, tr, det, svd, eigen, dot
 using Random: MersenneTwister, randexp, GLOBAL_RNG
 using EllipsisNotation
 
@@ -102,7 +102,7 @@ end
 ################ Interpolation ##################
 #################################################
 
-export nearestNeighbor, buildNearestNeighbor
+export nearestNeighbor, buildNearestNeighbor, localAverage
 
 """
     min_dist(v, D)
@@ -184,18 +184,83 @@ function buildNearestNeighbor(f, samples)
     return values
 end
 
+"""
+    localAverage(targetPSD, targetState, psdSamples, stateSamples, values, d_max)
+
+Computes the local average interpolation, defaulting to a 
+nearest neighbor interpolation if there are no points within `d_max`
+of the desired `target` location.
+
+The last axis of `samples` is assumed to index the sample locations.
+
+### Arguments
+ - `targetPSD`    - PSD point being evaluated, domain of function 
+ - `targetState`  - State point being evaluated, domain of function
+ - `psdSamples`   - Known PSD sample locations, domain of function
+ - `stateSamples` - Known state sample locations, domain of function
+ - `values`       - Values at known locations, range of function
+ - `d_max`        - Maximum distance to average
+
+### Returns
+A local average approximation at a given location
+
+### Notes
+values is indexed as ...
+"""
+function localAverage(targetPSD, targetState, psdSamples, stateSamples, values, d_max)
+    num   = 0
+    denom = 0
+    psdScratch   = zeros(size(targetPSD))
+    stateScratch = zeros(size(targetState))
+
+    # As a backup, track the nearest neighbor
+    nearestIndex = 1
+    minDist  = d_max 
+    minDist -= sqrt(sum(abs2,psdSamples[..,1] - targetPSD) + sum(abs2,stateSamples[..,1] - targetState))
+
+    # Loop through all points performing local average
+    # Note that through a hash approach, this loop could
+    # be done in a much more efficient manner.
+    psdSampleCount = size(psdSamples)[end]
+
+    for i in 1:length(values)
+        stateIndex = Int(floor((i-1)/psdSampleCount)) + 1
+        psdIndex = ((i - 1) % psdSampleCount) + 1
+
+        psdScratch   .= targetPSD   - @view psdSamples[..,psdIndex]
+        stateScratch .= targetState - @view stateSamples[..,stateIndex]
+
+        dist = d_max - sqrt(sum(abs2,psdScratch) + sum(abs2,stateScratch))
+
+        if dist > 0
+            num += dist * values[i]
+            denom += dist
+        elseif minDist < dist
+            minDist = dist
+            nearestIndex = i
+        end
+        
+    end
+    if denom == 0
+        return values[nearestIndex] 
+    end
+                 
+    return num/denom
+end
+
 
 #################################################
 ################# POMDP Tools ###################
 #################################################
 
 export updateCRLB, optimalAction_NearestNeighbor, valueUpdate_NearestNeighbor, valueIterate_NearestNeighbor, valueIterate_NearestNeighbor_precompute!
+export optimalAction_LocalAverage, valueUpdate_LocalAverage, valueIterate_LocalAverage
 
 """
-    updateFisherInformation(    crlb, 
-                                action, 
-                                jacobian,
-                                σ²)
+    updateCRLB_naive(    crlb, 
+                         action, 
+                         jacobian,
+                         σ²)
 
 Updates the Fisher information based on the Jacobian of the
 flow and the current measurement under Gaussian noise.
@@ -209,8 +274,31 @@ flow and the current measurement under Gaussian noise.
 ### Returns
 Updated Fisher Information
 """
-function updateCRLB(crlb, action, jacobian, σ²)
+function updateCRLB_naive(crlb, action, jacobian, σ²)
 	return jacobian * inv(inv(crlb) + action * action'/σ²) * jacobian'
+end
+
+"""
+    updateCRLB(   crlb, 
+                  action, 
+                  jacobian,
+                  σ²)
+
+Updates the Fisher information based on the Jacobian of the
+flow and the current measurement under Gaussian noise.
+
+### Arguments
+ - `crlb`       - Previous Fisher information matrix
+ - `action`     - Measurement vector
+ - `jacobian`   - Jacobian of flow for current timestep
+ - `σ²`         - Measurement variance
+
+### Returns
+Updated CRLB
+"""
+function updateCRLB(crlb, action, jacobian, σ²)
+    tmp = crlb * action
+    return jacobian * (crlb - (tmp * tmp')/(σ² + dot(action, tmp))) * jacobian'
 end
 
 
@@ -246,6 +334,41 @@ function optimalAction_NearestNeighbor( crlb, actionSpace,
 	return findmin(vals)[2]
 end
 
+
+"""
+    optimalAction_LocalAverage(     crlb, newState, actionSpace, 
+                                    psdSamples, stateSamples, values, 
+                                    jacobian, σ², d_max)
+
+Computes the optimal action for a given state based on the current 
+nearest neighbor approximation of the value function.
+Assumes linear measurement under additive Gaussian noise.
+
+### Arguments
+ - `crlb`         - Current Cramér-Rao bound
+ - `newState`     - Updated system state
+ - `actionSpace`  - Action Space (finite)
+ - `psdSamples`   - Sample PSD locations in value function
+ - `stateSamples` - Sample state locations in value function
+ - `values`       - Sample evaluations of value function
+ - `jacobian`     - Jacobian of flow for current timestep
+ - `σ²`           - Measurement variance
+ - `d_max`        - Maximum distance for local average
+
+### Returns
+The action that minimizes the Cramér-Rao bound
+"""
+function optimalAction_LocalAverage(    crlb, newState, actionSpace, 
+                                        psdSamples, stateSamples, values, jacobian, σ², d_max)
+
+    vals = zeros(length(actionSpace))
+
+    for i in 1:length(actionSpace)
+        new_crlb  = updateCRLB(crlb, actionSpace[i], jacobian, σ²)
+        vals[i]   = localAverage(new_crlb, newState, psdSamples, stateSamples, values, d_max)
+    end
+    return findmin(vals)[2]
+end
 
 """ 
     valueUpdate_NearestNeighbor(   crlb, 
@@ -288,6 +411,55 @@ function valueUpdate_NearestNeighbor(   crlb,
 end
 
 
+""" 
+    valueUpdate_LocalAverage(   crlb, 
+                                newState,
+                                γ, 
+                                jacobian, 
+                                actionSpace, 
+                                psdSamples, stateSamples,
+                                values,
+                                σ²,
+                                d_max)
+
+Iterates the discounted Bellman equation for minimizing the
+CRLB at a given current Fisher information under the
+nearest neighbor value approximation for a given point.
+
+Assumes linear measurement under additive Gaussian noise.
+
+### Arguments
+ - `crlb`         - Current Cramér-Rao bound
+ - `newState`     - Updated state value
+ - `γ`            - Discount factor
+ - `jacobian`     - Jacobian of flow for current timestep
+ - `actionSpace`  - Action Space (finite)
+ - `psdSamples`   - Sample PSD locations in value function
+ - `stateSamples` - Sample state locations in value function
+ - `values`       - Sample evaluations of value function
+ - `σ²`           - Noise variance
+ - `d_max`        - Maximum distance for local average
+
+### Returns
+The updated value function approximation evaluated at `crlb`
+"""
+function valueUpdate_LocalAverage(      crlb, 
+                                        newState,
+                                        γ, 
+                                        jacobian, 
+                                        actionSpace, 
+                                        psdSamples, stateSamples,
+                                        values,
+                                        σ², 
+                                        d_max)
+
+	update_vals = zeros(length(actionSpace))
+	for i in 1:length(actionSpace)
+		newCRLB = updateCRLB(crlb, actionSpace[i], jacobian, σ²)
+		update_vals[i] = localAverage(newCRLB, newState, psdSamples, stateSamples, values, d_max)
+	end
+	return γ * minimum(update_vals) + tr(crlb)
+end
 
 """
     valueIterate_NearestNeighbor(γ, jacobian, actionSpace, samples, values)
@@ -327,8 +499,80 @@ function valueIterate_NearestNeighbor(γ, jacobian, actionSpace, samples, values
 	return new_out
 end
 
+
 """
-    valueIterate_NearestNeighbor_precompute!(out, values, transitionMap, psdSamples, γ, stateSampleCount)
+    valueIterate_LocalAverage!( out,
+                                γ, 
+                                jacobianList, 
+                                updateStateList,
+                                actionSpace, 
+                                psdSamples, 
+                                stateSamples,
+                                values, 
+                                σ²
+                                d_max)
+
+Iterates the discounted Bellman equation for minimizing the
+CRLB at a given current Fisher information under the
+nearest neighbor value approximation.
+
+Assumes additive Gaussian noise.
+
+### Arguments
+ - `out`          - Output array
+ - `γ`            - Discount factor
+ - `jacobianList` - Jacobian of flow for current timestep
+ - `updateStateList` - 
+ - `actionSpace`  - Action Space (finite)
+ - `psdSamples`      - Sample locations in value function
+ - `stateSamples`    -
+ - `values`       - Sample evaluations of value function
+ - `σ²`           - Measurement variance
+ - `d_max`
+
+### Returns
+Nothing, but stores the updated value function approximation values for all points in `out`.
+
+### Notes
+This function is multithreaded, remember to give Julia multiple threads when launching with
+`julia -t NTHREADS`, where `NTHREADS` is the desired number of threads.
+"""
+function valueIterate_LocalAverage!(    out, 
+                                        γ, 
+                                        jacobianList, 
+                                        updateStateList, 
+                                        actionSpace, 
+                                        psdSamples, 
+                                        stateSamples, 
+                                        values, 
+                                        σ², 
+                                        d_max)
+
+    psdSampleCount = Int(length(values)//size(jacobianList)[3])
+    Threads.@threads for i in 1:length(values)
+        stateIndex = Int(floor((i-1)/psdSampleCount)) + 1
+        psdIndex = ((i - 1) % psdSampleCount) + 1
+
+        out[i] = valueUpdate_LocalAverage(  view(psdSamples,:,:,psdIndex), 
+                                            view(updateStateList,:,stateIndex),
+                                            γ, 
+                                            jacobianList[:,:,stateIndex], 
+                                            actionSpace, 
+                                            psdSamples, stateSamples,
+                                            values,
+                                            σ²,
+                                            d_max)
+        
+    end
+end
+
+"""
+    valueIterate_NearestNeighbor_precompute!(   out, 
+                                                values, 
+                                                transitionMap::Array{Int,2}, 
+                                                psdSamples, 
+                                                γ, 
+                                                stateSampleCount)
 
 Completes one step of value iteration using precomputed transition maps. 
 
@@ -363,10 +607,13 @@ function valueIterate_NearestNeighbor_precompute!(  out,
     end
 end
 
+
+
 #################################################
 ################# POMDP Tools ###################
 #################################################
 export ValueFunctionApproximation_NearestNeighbor_precompute, NearestNeighbor_OptimalPolicy
+export ValueFunctionApproximation_LocalAverage, LocalAverage_OptimalPolicy
 
 """
     ValueFunctionApproximation_NearestNeighbor_precompute(  system::AbstractSystem, 
@@ -462,6 +709,96 @@ end
 
 
 """
+    ValueFunctionApproximation_LocalAverage(    system::AbstractSystem, 
+                                                τ,
+                                                γ, 
+                                                actionSpace, 
+                                                λ = 1,
+                                                psdSampleCount = 1000,
+                                                trajectorySampleCount = 100
+                                                timestepSampleCount = 10,
+                                                σ² = 1,
+                                                max_iterations=50,
+                                                d_max = 0.05)
+
+Approximates the value function using a LocalAverage interpolation in the discounted cost optimal sampling problem.
+Requires a model of the system dynamics, timestep, discount-factor, and a discrete action space.
+
+Computes `max_iterations` steps of value iteration.
+
+### Arguments
+ - `system`                 - Representation of the dynamical system
+ - `τ`                      - Timestep size
+ - `γ`                      - Discount Factor
+ - `actionSpace`            - Vector of possible actions
+ - `λ`                      - CRLB space sampling parameter
+ - `psdSampleCount`         - Number of covariance-matrix samples
+ - `trajectorySampleCount`  - Number of state-space trajectory samples
+ - `timestepSampleCount`    - Number of state-space timestep samples
+ - `σ²`                     - Measurement variance
+ - `max_iterations`         - Maximum number of iterations
+ - `d_max`                  - 
+
+### Returns
+    (values, psdSamples, stateSamples)
+
+ - `values`         - Output of value function at sample points 
+ - `psdSamples`     - CRLB sample locations
+ - `stateSamples`   - State sample locations
+
+### Note
+
+`values` is a 1D array indexed as crlbIndex + psdSampleCount * (stateIndex - 1)
+"""
+function ValueFunctionApproximation_LocalAverage(   system::AbstractSystem, 
+                                                    τ,
+                                                    γ, 
+                                                    actionSpace, 
+                                                    λ = 1,
+                                                    psdSampleCount = 1000,
+                                                    trajectorySampleCount = 100,
+                                                    timestepSampleCount = 10,
+                                                    σ² = 1,
+                                                    max_iterations=50,
+                                                    d_max=.05)
+
+    # Discretize the space
+    stateSampleCount = trajectorySampleCount * timestepSampleCount
+    psdSamples   = samplePSD(psdSampleCount, dimension(system), λ) 
+    stateSamples = sampleStateSpace(system, trajectorySampleCount, timestepSampleCount, 0, τ)
+    values = rand(psdSampleCount*stateSampleCount)
+    updateValues = copy(values)
+
+    # Precompute the list of Jacobians
+    jacobianList = zeros(dimension(system),dimension(system), stateSampleCount)
+    updateStateList = zeros(dimension(system), stateSampleCount)
+
+    for i in 1:stateSampleCount
+        jacobianList[:,:,i] .= flowJacobian(stateSamples[:,i], τ, system)
+        updateStateList[:,i] .= flow(stateSamples[:,i], τ, system)
+    end
+
+    # Apply Value Iteration 
+    for i in 1:max_iterations
+        @info i
+        valueIterate_LocalAverage!( updateValues, 
+                                    γ, 
+                                    jacobianList, 
+                                    updateStateList, 
+                                    actionSpace, 
+                                    psdSamples, 
+                                    stateSamples, 
+                                    values, 
+                                    σ², 
+                                    d_max)
+
+        values .= updateValues
+    end
+
+    return values, psdSamples, stateSamples 
+end
+
+"""
     NearestNeighbor_OptimalPolicy(  state, 
                                     crlb, 
                                     system::AbstractSystem, 
@@ -512,19 +849,10 @@ function NearestNeighbor_OptimalPolicy( state,
 
     # if not invertible, operate in invertible subspace
     # Project action to be orthogonal to non-invertible subspace
-    S, U = eigen(crlb)
-    nonzero_indices =  abs.(S) .> eps()
-    projection = U[:,nonzero_indices] * U[:,nonzero_indices]'
-    subspace_fisher = U[:,nonzero_indices] * Diagonal(S[nonzero_indices].^-1.0) *  U[:,nonzero_indices]'
-
-    projected_action = projection * actionSpace[1] 
-    Sn, Un   = eigen(subspace_fisher + projected_action * projected_action'/σ²)
-    new_crlb = Un[:,nonzero_indices] * Diagonal(Sn[nonzero_indices].^-1.0) * Un[:,nonzero_indices]'
-    new_crlb = jacobian * new_crlb * jacobian'
-
+    new_crlb = updateCRLB(crlb, actionSpace[1], jacobian, σ²)
     chosen_crlb = copy(new_crlb)
 
-    ~, crlb_index  = min_dist(new_crlb, psdSamples)
+    ~, crlb_index  = min_dist(crlb, psdSamples)
     ~, state_index = min_dist(new_state, stateSamples)
     base_index = (state_index-1)*psdSampleCount
 
@@ -532,16 +860,85 @@ function NearestNeighbor_OptimalPolicy( state,
     minvalue = values[base_index + crlb_index]
     
     for i in 2:length(actionSpace)
-        projected_action = projection * actionSpace[i]
-        Sn, Un   = eigen(subspace_fisher + projected_action * projected_action'/σ²)
-        new_crlb = Un[:,nonzero_indices] * Diagonal(Sn[nonzero_indices].^-1.0) * Un[:,nonzero_indices]'
-        new_crlb = jacobian * new_crlb * jacobian'
-
+        new_crlb = updateCRLB(crlb, actionSpace[i], jacobian, σ²)
         ~, crlb_index  = min_dist(new_crlb, psdSamples)
 
         if minvalue > values[base_index + crlb_index]
             index = i
-            mintrace = values[base_index + crlb_index]
+            minvalue = values[base_index + crlb_index]
+            chosen_crlb = copy(new_crlb)
+        end
+    end
+    return (actionSpace[index], index, new_state, chosen_crlb)
+end
+
+
+
+"""
+    LocalAverage_OptimalPolicy( state, 
+                                crlb, 
+                                system::AbstractSystem, 
+                                σ²,
+                                τ, 
+                                values, 
+                                psdSamples, 
+                                stateSamples, 
+                                actionSpace,
+                                d_max)
+
+Given a nearest neighbor approximation method for the value function, as well as the current state
+and crlb, returns the optimal action.
+
+### Arguments
+ - `state`        - Current state of the system
+ - `crlb`         - Current CRLB
+ - `system`       - Represntation of the system
+ - `σ²`           - Measurement noise power
+ - `τ`            - Timestep size
+ - `values`       - Value function evaluated at samples
+ - `psdSamples`   - Positive Semidefinite matrix samples
+ - `stateSamples  - Samples in the state-space
+ - `actionSpace`  - Set of possible actions
+ - `d_max`        - Maximum distance for local average
+
+### Returns
+    (action, index, new_state, new_crlb)
+
+ - `action` - The optimal action
+ - `index`  - The index of the action
+"""
+function LocalAverage_OptimalPolicy(    state, 
+                                        crlb, 
+                                        system::AbstractSystem, 
+                                        σ²,
+                                        τ, 
+                                        values, 
+                                        psdSamples, 
+                                        stateSamples, 
+                                        actionSpace,
+                                        d_max)
+    # If only one action, return
+    if length(actionSpace) == 1
+        return (actionSpace[1], 1)
+    end
+
+    new_state = flow(state, τ, system)
+    jacobian = flowJacobian(state, τ, system)
+    psdSampleCount = size(psdSamples)[3]
+
+    new_crlb = updateCRLB(crlb, actionSpace[1], jacobian, σ²)
+    chosen_crlb = copy(new_crlb)
+
+    index = 1
+    minvalue = localAverage(new_crlb, new_state, psdSamples, stateSamples, values, d_max)
+
+    for i in 2:length(actionSpace)
+        new_crlb = updateCRLB(crlb, actionSpace[i], jacobian, σ²)
+        val = localAverage(new_crlb, new_state, psdSamples, stateSamples, values, d_max)
+
+        if minvalue > val
+            index = i
+            minvalue = val
             chosen_crlb = copy(new_crlb)
         end
     end
