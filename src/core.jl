@@ -1148,3 +1148,34 @@ function LocalAverage_OptimalPolicy(    state,
     end
     return (actionSpace[index], index, new_state, chosen_crlb)
 end
+
+
+########################################
+########## State Estimation ############
+########################################
+
+
+"""
+    stateupdate_EKF(prediction, covariance, observation, action, σ²)
+
+Updates the state based on the measurement according to the Extended Kalman Filter (EKF).
+
+### Arguments
+ - `prediction`  - Predicted State
+ - `covariance`  - Covariance approximation
+ - `observation` - Observed value
+ - `action`      - Measurement functional
+ - `σ²`          - Noise variance
+
+### Returns
+The updated state vector
+"""
+function stateupdate_EKF(prediction, crlb, observation, action, σ²)
+    update = copy(prediction)
+
+    num   = covariance * action * (observation - dot(action, prediction))
+    denom = dot(action, covariance * action)
+
+    update += num/denom
+    return update
+end
