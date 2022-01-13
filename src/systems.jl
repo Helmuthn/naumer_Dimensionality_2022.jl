@@ -1,4 +1,5 @@
 # Dynamical system definitions used in the manuscript
+using LinearAlgebra: I
 using DifferentialEquations: Tsit5, solve, ODEProblem, remake
 using ForwardDiff
 
@@ -64,6 +65,36 @@ Returns the dimensionality of the system.
 """
 function dimension end;
 
+
+#############################
+###### Static Systems #######
+#############################
+export StaticSystem
+
+"""
+    StaticSystem <: AbstractSystem
+
+Defines a system dx/dt = 0
+"""
+struct StaticSystem <: AbstractSystem{Float64}
+    dim::Int64
+end
+
+function differential(system::StaticSystem, x::Vector)
+    return zeros(length(x))
+end
+
+function flow(x::Vector, τ, system::StaticSystem)
+    return copy(x)
+end
+
+function flowJacobian(x::Vector, τ, system::StaticSystem)
+    return I(system.dim)
+end
+
+function dimension(system::StaticSystem)
+    return system.dim
+end
 
 #############################
 ###### Linear Systems #######
@@ -225,7 +256,7 @@ end
 
 function flow(x::Vector, τ, system::LorenzSystem)
     problem = ODEProblem(lorenzDynamics!, x, (0.0, τ), (system.σ, system.ρ, system.β))
-    sol = solve(problem, Tsit5(), reltol=1e-8, save_everystep=false)
+    sol = solve(problem, Tsit5(), reltol=1e-4, save_everystep=false)
     return sol[end]
 end
 
@@ -234,7 +265,7 @@ function flowJacobian(x::Vector, τ, system::LorenzSystem)
 
     function solvesystem(init)
         prob = remake(problem, u0=init)
-        sol = solve(prob, Tsit5(), reltol=1e-8, save_everystep=false)
+        sol = solve(prob, Tsit5(), reltol=1e-4, save_everystep=false)
         return sol[end]
     end
 

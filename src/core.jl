@@ -249,6 +249,71 @@ function localAverage(targetPSD, targetState, psdSamples, stateSamples, values, 
 end
 
 
+
+"""
+    localAverageWeights(targetPSD, targetState, psdSamples, stateSamples, values, d_max)
+
+Computes the local average interpolation, defaulting to a 
+nearest neighbor interpolation if there are no points within `d_max`
+of the desired `target` location.
+
+The last axis of `samples` is assumed to index the sample locations.
+
+### Arguments
+ - `targetPSD`    - PSD point being evaluated, domain of function 
+ - `targetState`  - State point being evaluated, domain of function
+ - `psdSamples`   - Known PSD sample locations, domain of function
+ - `stateSamples` - Known state sample locations, domain of function
+ - `d_max`        - Maximum distance to average
+
+### Returns
+    (indices, weights)
+
+### Notes
+values is indexed as ...
+"""
+function localAverageWeights(targetPSD, targetState, psdSamples, stateSamples, d_max)
+    psdScratch   = zeros(size(targetPSD))
+    stateScratch = zeros(size(targetState))
+
+    # As a backup, track the nearest neighbor
+    nearestIndex = 1
+    minDist  = d_max 
+    minDist -= sqrt(sum(abs2,psdSamples[..,1] - targetPSD) + sum(abs2,stateSamples[..,1] - targetState))
+
+    # Loop through all points performing local average
+    # Note that through a hash approach, this loop could
+    # be done in a much more efficient manner.
+    psdSampleCount = size(psdSamples)[end]
+
+    weights = zeros(Float64,0)
+    indices = zeros(Int64,0)
+
+    for i in 1:(size(psdSamples)[end] * size(stateSamples)[end])
+        stateIndex = Int(floor((i-1)/psdSampleCount)) + 1
+        psdIndex = ((i - 1) % psdSampleCount) + 1
+
+        psdScratch   .= targetPSD   - @view psdSamples[..,psdIndex]
+        stateScratch .= targetState - @view stateSamples[..,stateIndex]
+
+        dist = d_max - sqrt(sum(abs2,psdScratch) + sum(abs2,stateScratch))
+
+        if dist > 0
+            push!(weights, dist)
+            push!(indices, i)
+        elseif minDist < dist
+            minDist = dist
+            nearestIndex = i
+        end
+    end
+    if length(weights) == 0
+        return ([nearestIndex], [1])
+    end
+                 
+    return indices, weights / sum(weights)
+end
+
+
 #################################################
 ################# POMDP Tools ###################
 #################################################
@@ -500,6 +565,32 @@ function valueIterate_NearestNeighbor(γ, jacobian, actionSpace, samples, values
 end
 
 
+function valueIterate_LocalAverage_precompute!( out, 
+                                                γ, 
+                                                psdSamples,
+                                                values, 
+                                                indices,
+                                                weights)
+
+    psdSampleCount = size(psdSamples)[end]
+    Threads.@threads for i in 1:length(values)
+        crlbIndex = ((i-1) % psdSampleCount) + 1
+        out[i] = valueUpdate_precomputedWeights( values, psdSamples[:,:,crlbIndex], γ, indices[:,i], weights[:,i])
+    end
+end
+
+
+function valueUpdate_precomputedWeights(values, crlb, γ, indices, weights)
+    BestValue = dot(weights[1], values[indices[1]])
+    for i in 2:length(weights)
+        value = dot(weights[i], values[indices[i]])
+        if value < BestValue
+            BestValue = value
+        end
+    end
+    return γ * BestValue + tr(crlb)
+end
+
 """
     valueIterate_LocalAverage!( out,
                                 γ, 
@@ -613,7 +704,7 @@ end
 ################# POMDP Tools ###################
 #################################################
 export ValueFunctionApproximation_NearestNeighbor_precompute, NearestNeighbor_OptimalPolicy
-export ValueFunctionApproximation_LocalAverage, LocalAverage_OptimalPolicy
+export ValueFunctionApproximation_LocalAverage, LocalAverage_OptimalPolicy, ValueFunctionApproximation_LocalAverage_precompute
 
 """
     ValueFunctionApproximation_NearestNeighbor_precompute(  system::AbstractSystem, 
@@ -707,6 +798,119 @@ function ValueFunctionApproximation_NearestNeighbor_precompute( system::Abstract
     return values, psdSamples, stateSamples 
 end
 
+
+"""
+    ValueFunctionApproximation_LocalAverage_precompute(    system::AbstractSystem, 
+                                                           τ,
+                                                           γ, 
+                                                           actionSpace, 
+                                                           λ = 1,
+                                                           psdSampleCount = 1000,
+                                                           trajectorySampleCount = 100
+                                                           timestepSampleCount = 10,
+                                                           σ² = 1,
+                                                           max_iterations=50,
+                                                           d_max = 0.05)
+
+Approximates the value function using a LocalAverage interpolation in the discounted cost optimal sampling problem.
+Requires a model of the system dynamics, timestep, discount-factor, and a discrete action space.
+
+Computes `max_iterations` steps of value iteration.
+
+Precomputes the local averaging weights to accelerate the value iteration steps.
+
+### Arguments
+ - `system`                 - Representation of the dynamical system
+ - `τ`                      - Timestep size
+ - `γ`                      - Discount Factor
+ - `actionSpace`            - Vector of possible actions
+ - `λ`                      - CRLB space sampling parameter
+ - `psdSampleCount`         - Number of covariance-matrix samples
+ - `trajectorySampleCount`  - Number of state-space trajectory samples
+ - `timestepSampleCount`    - Number of state-space timestep samples
+ - `σ²`                     - Measurement variance
+ - `max_iterations`         - Maximum number of iterations
+ - `d_max`                  - 
+
+### Returns
+    (values, psdSamples, stateSamples)
+
+ - `values`         - Output of value function at sample points 
+ - `psdSamples`     - CRLB sample locations
+ - `stateSamples`   - State sample locations
+
+### Note
+
+`values` is a 1D array indexed as crlbIndex + psdSampleCount * (stateIndex - 1)
+"""
+function ValueFunctionApproximation_LocalAverage_precompute(    system::AbstractSystem, 
+                                                                τ,
+                                                                γ, 
+                                                                actionSpace, 
+                                                                λ = 1,
+                                                                psdSampleCount = 1000,
+                                                                trajectorySampleCount = 100,
+                                                                timestepSampleCount = 10,
+                                                                σ² = 1,
+                                                                max_iterations=50,
+                                                                d_max=.05)
+
+    # Discretize the space
+    stateSampleCount = trajectorySampleCount * timestepSampleCount
+    psdSamples   = samplePSD(psdSampleCount, dimension(system), λ) 
+    stateSamples = sampleStateSpace(system, trajectorySampleCount, timestepSampleCount, 0, τ)
+    values = rand(psdSampleCount*stateSampleCount)
+    updateValues = copy(values)
+
+    # Precompute the list of Jacobians
+    jacobianList = zeros(dimension(system),dimension(system), stateSampleCount)
+    updateStateList = zeros(dimension(system), stateSampleCount)
+
+    for i in 1:stateSampleCount
+        jacobianList[:,:,i] .= flowJacobian(stateSamples[:,i], τ, system)
+        updateStateList[:,i] .= flow(stateSamples[:,i], τ, system)
+    end
+
+
+    # Precompute Local Average weights
+    weights = Array{Array{Float64,1}, 2}(undef, length(actionSpace), length(values))
+    indices = Array{Array{Int64,1},2}(undef, length(actionSpace), length(values))
+
+    Threads.@threads for i in 1:length(values)
+        stateIndex = Int(floor((i-1)/psdSampleCount)) + 1
+        psdIndex = ((i - 1) % psdSampleCount) + 1
+
+        targetState = updateStateList[:,stateIndex]
+        jacobian = jacobianList[:,:,stateIndex]
+
+        for j in 1:length(actionSpace)
+            targetPSD = updateCRLB(psdSamples[:,:,psdIndex], actionSpace[j], jacobian, σ²)
+
+            chosen_indices, chosen_weights = localAverageWeights(targetPSD,
+                                                                 targetState,
+                                                                 psdSamples,
+                                                                 stateSamples,
+                                                                 d_max)
+            weights[j,i] = chosen_weights
+            indices[j,i] = chosen_indices
+        end
+    end
+
+    # Apply Value Iteration 
+    for i in 1:max_iterations
+        @info i
+        valueIterate_LocalAverage_precompute!( updateValues, 
+                                               γ, 
+                                               psdSamples,
+                                               values, 
+                                               indices,
+                                               weights)
+
+        values .= updateValues
+    end
+
+    return values, psdSamples, stateSamples 
+end
 
 """
     ValueFunctionApproximation_LocalAverage(    system::AbstractSystem, 

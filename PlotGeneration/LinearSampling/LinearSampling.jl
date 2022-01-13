@@ -24,6 +24,7 @@ trajectorySampleCount = 1
 timestepSampleCount = 1
 σ² = 1
 max_iterations = 10000
+d_max = 2
 
 #################################################
 ################# Data Generation ###############
@@ -42,7 +43,7 @@ optimal_sampling_trace_low[1]    = dot([4,4], geometric_amplification)
 optimal_sampling_trace_medium[1] = dot([4,4], geometric_amplification)
 random_sampling_trace[1]         = dot([4,4], geometric_amplification)
 
-values, psdSamples, stateSamples = ValueFunctionApproximation_NearestNeighbor_precompute(system,
+values, psdSamples, stateSamples = ValueFunctionApproximation_LocalAverage_precompute(system,
                                                                                         τ,
                                                                                         γ,
                                                                                         actionSpace,
@@ -51,17 +52,18 @@ values, psdSamples, stateSamples = ValueFunctionApproximation_NearestNeighbor_pr
                                                                                         trajectorySampleCount,
                                                                                         timestepSampleCount,
                                                                                         σ²,
-                                                                                        max_iterations)
+                                                                                        max_iterations,
+                                                                                        d_max)
 
 
 
-NN_Policy_tuple = (system, σ², τ, values, psdSamples, stateSamples, actionSpace)
+NN_Policy_tuple = (system, σ², τ, values, psdSamples, stateSamples, actionSpace, d_max)
 
 for i in 2:max_steps
     global state
     global crlb
     global NN_Policy_tuple
-    action, index, state, crlb = NearestNeighbor_OptimalPolicy(  state,
+    action, index, state, crlb = LocalAverage_OptimalPolicy(  state,
                                                                  crlb,
                                                                  NN_Policy_tuple...)
     ~, S, ~ = svd(crlb)
@@ -71,7 +73,7 @@ end
 
 
 
-values, psdSamples, stateSamples = ValueFunctionApproximation_NearestNeighbor_precompute(system,
+values, psdSamples, stateSamples = ValueFunctionApproximation_LocalAverage_precompute(system,
                                                                                         τ,
                                                                                         γ,
                                                                                         actionSpace,
@@ -80,17 +82,18 @@ values, psdSamples, stateSamples = ValueFunctionApproximation_NearestNeighbor_pr
                                                                                         trajectorySampleCount,
                                                                                         timestepSampleCount,
                                                                                         σ²,
-                                                                                        max_iterations)
+                                                                                        max_iterations,
+                                                                                        d_max)
 crlb = [4.0 0; 0 4.0]
 state = state_cp
 
-NN_Policy_tuple = (system, σ², τ, values, psdSamples, stateSamples, actionSpace)
+NN_Policy_tuple = (system, σ², τ, values, psdSamples, stateSamples, actionSpace, d_max)
 
 for i in 2:max_steps
     global state
     global crlb
     global NN_Policy_tuple
-    action, index, state, crlb = NearestNeighbor_OptimalPolicy( state,
+    action, index, state, crlb = LocalAverage_OptimalPolicy( state,
                                                                  crlb,
                                                                  NN_Policy_tuple...)
     ~, S, ~ = svd(crlb)

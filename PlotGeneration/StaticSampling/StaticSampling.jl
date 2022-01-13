@@ -19,19 +19,19 @@ a = 1
 γ = 0.99
 actionSpace = [[sin(θ), cos(θ)] for θ in 0:.1:π]
 
-λ = 1
-psdSampleCount = [30]
-trajectorySampleCount = 30
-timestepSampleCount = 4
+λ = .5
+psdSampleCount = [100]
+trajectorySampleCount = 20
+timestepSampleCount = 1
 σ² = 1
-max_iterations = 100
+max_iterations = 1000
 d_max = 2
 
 #################################################
 ################# Data Generation ###############
 #################################################
 
-system = HopfSystem(a, b)
+system = StaticSystem(2)
 
 optimal_sampling_trace = zeros(max_steps)
 random_sampling_trace  = zeros(max_steps)
@@ -41,17 +41,6 @@ random_sampling_trace[1]  = 8
 
 @info("Approximating Value Function")
 
-#values, psdSamples, stateSamples = ValueFunctionApproximation_NearestNeighbor_precompute( system,
-#                                                                                          τ,
-#                                                                                          γ,
-#                                                                                          actionSpace,
-#                                                                                          λ,
-#                                                                                          psdSampleCount[1],
-#                                                                                          trajectorySampleCount,
-#                                                                                          timestepSampleCount,
-#                                                                                          σ²,
-#                                                                                          max_iterations)
-#
 values, psdSamples, stateSamples = ValueFunctionApproximation_LocalAverage_precompute( system,
                                                                             τ,
                                                                             γ,
@@ -100,7 +89,7 @@ end
 ################ Save Data CSV ##################
 #################################################
 
-CSV.write("HopfSampling.csv", ( random_sampling_trace = random_sampling_trace, 
-                                optimal_sampling_trace = optimal_sampling_trace,
-                                samples = Array(1:max_steps)))
+CSV.write("StaticSampling.csv", ( random_sampling_trace = random_sampling_trace, 
+                                  optimal_sampling_trace = optimal_sampling_trace,
+                                  samples = Array(1:max_steps)))
 
