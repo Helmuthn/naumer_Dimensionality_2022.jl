@@ -1153,7 +1153,7 @@ end
 ########################################
 ########## State Estimation ############
 ########################################
-
+export stateupdate_EKF
 
 """
     stateupdate_EKF(prediction, covariance, observation, action, σ²)
@@ -1178,4 +1178,70 @@ function stateupdate_EKF(prediction, crlb, observation, action, σ²)
 
     update += num/denom
     return update
+end
+
+
+########################################
+########## Direct Solution #############
+########################################
+
+"""
+    measurementvalue_1DApprox(action, limitvector, crlb, σ²)
+
+Gives a value for the measurement action based on the 1D approximation
+of the limiting behavior.
+
+### Arguments
+ - `action`      - Measurement functional
+ - `limitvector` - Non-zero right singular vector of limiting flow Jacobian
+ - `crlb`        - Current CRLB for state estimation
+ - `σ²`          - Measurement noise variance
+
+### Returns
+A value of the action which should be maximized to minimize the CRLB for prediction.
+"""
+function measurementvalue_1DApprox(action, limitvector, crlb, σ²)
+    u  = action
+    v = limitvector
+    Σu = crlb * u
+
+    num   = dot(v, Σu)^2
+    denom = dot(u, Σu)^2 + σ² * dot(u, u)
+
+    return num/denom
+end
+
+
+"""
+    optimalaction_1DApprox(actionspace, limitvector, crlb, σ²)
+
+Returns the optimal action out of a finite `actionspace`.
+
+### Arguments
+ - `actionspace` - List of measurement functionals
+ - `limitvector` - Non-zero right singular vector of limiting flow Jacobian
+ - `crlb`        - Current CRLB for state estimation
+ - `σ²`          - Measurement noise variance
+
+### Returns
+    `index, action`
+
+- `index`  - The index of the optimal action
+- `action` - The optimal action
+"""
+function optimalaction_1DApprox(actionspace, limitvector, crlb, σ²)
+    params = (limitvector, crlb, σ²)
+
+    maxind = 1
+    maxval = measurementvalue_1DApprox(actionSpace[1], params...)
+
+    for i = 2:length(actionspace)
+        val = measurementvalue_1DApprox(actionSpace[i], params...)
+        if val > maxval
+            maxval = val
+            maxind = i
+        end
+    end
+
+    return maxind, actionspace[maxind]
 end
