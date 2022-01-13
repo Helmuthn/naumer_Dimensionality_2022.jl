@@ -1185,8 +1185,10 @@ end
 ########## Direct Solution #############
 ########################################
 
+export optimalaction_1DApprox, measurementvalue_1DApprox
+
 """
-    measurementvalue_1DApprox(action, limitvector, crlb, σ²)
+    measurementvalue_1DApprox(action, limitvector::Vector, crlb, σ²)
 
 Gives a value for the measurement action based on the 1D approximation
 of the limiting behavior.
@@ -1200,7 +1202,7 @@ of the limiting behavior.
 ### Returns
 A value of the action which should be maximized to minimize the CRLB for prediction.
 """
-function measurementvalue_1DApprox(action, limitvector, crlb, σ²)
+function measurementvalue_1DApprox(action, limitvector::Vector, crlb, σ²)
     u  = action
     v = limitvector
     Σu = crlb * u
@@ -1213,7 +1215,7 @@ end
 
 
 """
-    optimalaction_1DApprox(actionspace, limitvector, crlb, σ²)
+    optimalaction_1DApprox(actionspace, limitvector::Vector, crlb, σ²)
 
 Returns the optimal action out of a finite `actionspace`.
 
@@ -1229,7 +1231,7 @@ Returns the optimal action out of a finite `actionspace`.
 - `index`  - The index of the optimal action
 - `action` - The optimal action
 """
-function optimalaction_1DApprox(actionspace, limitvector, crlb, σ²)
+function optimalaction_1DApprox(actionspace, limitvector::Vector, crlb, σ²)
     params = (limitvector, crlb, σ²)
 
     maxind = 1
@@ -1244,4 +1246,33 @@ function optimalaction_1DApprox(actionspace, limitvector, crlb, σ²)
     end
 
     return maxind, actionspace[maxind]
+end
+
+
+"""
+    optimalaction_1DApprox(actionspace, system::AbstractSystem, state, crlb, σ², T)
+
+Returns the optimal action out of a finite `actionspace`.
+
+### Arguments
+ - `actionspace` - List of measurement functionals
+ - `system`      - Dynamical System
+ - `state`       - Current system state
+ - `crlb`        - Current CRLB for state estimation
+ - `σ²`          - Measurement noise variance
+ - `T`           - Time horizon to approximate limit
+
+### Returns
+    `index, action`
+
+- `index`  - The index of the optimal action
+- `action` - The optimal action
+"""
+function optimalaction_1DApprox(actionspace, system::AbstractSystem, state, crlb, σ², T)
+    # Approximate limiting singular vector
+    jacobian = flowJacobian(state, T, system)
+    ~, Σ, V = svd(jacobian)
+    limitvector = V[:,1] 
+
+    return optimalaction_1DApprox(actionspace, limitvector, crlb, σ²)
 end
