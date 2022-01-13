@@ -29,7 +29,7 @@ A random `n×n` matrix
 function randomPSD(rng, n, λ)
     mat = randn(rng,n,n)
     ortho, ~ = qr(mat)
-	return ortho' * Diagonal(randexp(rng,n)/λ) * ortho
+    return ortho' * Diagonal(randexp(rng,n)/λ) * ortho
 end
 
 randomPSD(n, λ) = randomPSD(GLOBAL_RNG, n, λ)
@@ -124,19 +124,19 @@ Where `out` is the closest vector, and `out_ind` is the position.
 This function is not exported
 """
 function min_dist(v,D)
-	alloc = zeros(size(v))
-	alloc .= v.- @view D[..,1]
-	out = sum(abs2,alloc)
-	out_ind = 1
+    alloc = zeros(size(v))
+    alloc .= v.- @view D[..,1]
+    out = sum(abs2,alloc)
+    out_ind = 1
     @inbounds for i in 2:size(D)[end]
-		alloc .= v .- @view D[..,i]
-		d = sum(abs2,alloc)
-		if d < out
-			out = d
-			out_ind = i
-		end
-	end
-	return out, out_ind
+        alloc .= v .- @view D[..,i]
+        d = sum(abs2,alloc)
+        if d < out
+            out = d
+            out_ind = i
+        end
+    end
+    return out, out_ind
 end
 
 
@@ -155,8 +155,8 @@ the closest known sample.
 Approximate value at `target`
 """
 function nearestNeighbor(target, samples, values)
-	~, i = min_dist(target, samples)
-	return values[i]
+    ~, i = min_dist(target, samples)
+    return values[i]
 end
 
 
@@ -340,7 +340,7 @@ flow and the current measurement under Gaussian noise.
 Updated Fisher Information
 """
 function updateCRLB_naive(crlb, action, jacobian, σ²)
-	return jacobian * inv(inv(crlb) + action * action'/σ²) * jacobian'
+    return jacobian * inv(inv(crlb) + action * action'/σ²) * jacobian'
 end
 
 """
@@ -390,13 +390,13 @@ The action that minimizes the Cramér-Rao bound
 function optimalAction_NearestNeighbor( crlb, actionSpace, 
                                         samples, values, jacobian, σ²)
 
-	vals = zeros(length(actionSpace))
+    vals = zeros(length(actionSpace))
 
-	for i in 1:length(actionSpace)
-		new_crlb  = updateCRLB(crlb, actionSpace[i], jacobian, σ²)
+    for i in 1:length(actionSpace)
+        new_crlb  = updateCRLB(crlb, actionSpace[i], jacobian, σ²)
                 vals[i]   = nearestNeighbor(new_crlb, samples, values)
-	end
-	return findmin(vals)[2]
+    end
+    return findmin(vals)[2]
 end
 
 
@@ -467,12 +467,12 @@ function valueUpdate_NearestNeighbor(   crlb,
                                         samples, values,
                                         σ²)
 
-	update_vals = zeros(length(actionSpace))
-	for i in 1:length(actionSpace)
-		new_crlb = updateCRLB(crlb, actionSpace[i], jacobian, σ²)
-		update_vals[i] = nearestNeighbor(new_crlb, samples, values)
-	end
-	return γ * minimum(update_vals) + tr(crlb)
+    update_vals = zeros(length(actionSpace))
+    for i in 1:length(actionSpace)
+        new_crlb = updateCRLB(crlb, actionSpace[i], jacobian, σ²)
+        update_vals[i] = nearestNeighbor(new_crlb, samples, values)
+    end
+    return γ * minimum(update_vals) + tr(crlb)
 end
 
 
@@ -518,12 +518,12 @@ function valueUpdate_LocalAverage(      crlb,
                                         σ², 
                                         d_max)
 
-	update_vals = zeros(length(actionSpace))
-	for i in 1:length(actionSpace)
-		newCRLB = updateCRLB(crlb, actionSpace[i], jacobian, σ²)
-		update_vals[i] = localAverage(newCRLB, newState, psdSamples, stateSamples, values, d_max)
-	end
-	return γ * minimum(update_vals) + tr(crlb)
+    update_vals = zeros(length(actionSpace))
+    for i in 1:length(actionSpace)
+        newCRLB = updateCRLB(crlb, actionSpace[i], jacobian, σ²)
+        update_vals[i] = localAverage(newCRLB, newState, psdSamples, stateSamples, values, d_max)
+    end
+    return γ * minimum(update_vals) + tr(crlb)
 end
 
 """
@@ -551,17 +551,17 @@ This function is multithreaded, remember to give Julia multiple threads when lau
 `julia -t NTHREADS`, where `NTHREADS` is the desired number of threads.
 """
 function valueIterate_NearestNeighbor(γ, jacobian, actionSpace, samples, values, σ²)
-	new_out = zeros(length(values))
-	Threads.@threads for i in 1:length(values)
-		new_out[i] = valueUpdate_NearestNeighbor(  view(samples,:,:,i), 
+    new_out = zeros(length(values))
+    Threads.@threads for i in 1:length(values)
+        new_out[i] = valueUpdate_NearestNeighbor(  view(samples,:,:,i), 
                                                            γ, 
                                                            jacobian, 
                                                            actionSpace, 
                                                            samples, values,
                                                            σ²)
 
-	end
-	return new_out
+    end
+    return new_out
 end
 
 
