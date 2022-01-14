@@ -2,6 +2,7 @@
 using LinearAlgebra: I
 using DifferentialEquations: Tsit5, solve, ODEProblem, remake
 using ForwardDiff
+using SparseArrays: spzeros
 
 ############################
 ####### Basic System #######
@@ -164,7 +165,7 @@ function flow(x::Vector, τ, system::VanDerPolSystem)
 end
 
 function flowJacobian(x::Vector, τ, system::VanDerPolSystem)
-    problem = ODEProblem(hopfDynamics!, x, (0.0, τ), system.μ)
+    problem = ODEProblem(vanderpolDynamics!, x, (0.0, τ), system.μ)
 
     function solvesystem(init)
         prob = remake(problem, u0=init)
@@ -173,6 +174,68 @@ function flowJacobian(x::Vector, τ, system::VanDerPolSystem)
     end
 
     return ForwardDiff.jacobian(solvesystem, x)
+end
+
+
+#############################
+######## Van Der Pol ########
+#############################
+export VanDerPolSystem_expanded
+
+"""
+    VanDerPolSystem_expanded
+
+Represents dynamics in a product space where two axis
+represent a Van Der Pol System, while the rest represent
+stable linear systems.
+
+Used to demonstrate scaling of dimensionality collapse benefit
+by allowing the introduction of arbitrary numbers of
+collapsing dimensions.
+
+### Fields
+ - `μ`               - Van Der Pol Parameter
+ - `linearDimension` - Extra Collapsing Dimension Count
+"""
+struct VanDerPolSystem_expanded{T} <: AbstractSystem{T}
+    μ::T
+    linearDimension::Int
+end
+
+function dimension(system::VanDerPolSystem_expanded)
+    return 2 + system.linearDimension
+end
+
+function differential(system::VanDerPolSystem_expanded, x::Vector)
+    out = zeros(dimension(system))
+    out[1] = x[2]
+    out[2] = system.μ * (1 - x[1]^2) * x[2] - x[1]
+    out[3:end] .= -x[3:end]
+    return out
+end
+
+function flow(x::Vector, τ, system::VanDerPolSystem_expanded)
+    problem = ODEProblem(vanderpolDynamics!, x[1:2], (0.0, τ), system.μ)
+    sol = solve(problem, Tsit5(), reltol=1e-8, save_everystep=false)
+    return [sol[end]; exp(-τ) .* x[3:end]]
+end
+
+function flowJacobian(x::Vector, τ, system::VanDerPolSystem_expanded)
+    problem = ODEProblem(vanderpolDynamics!, x[1:2], (0.0, τ), system.μ)
+
+    function solvesystem(init)
+        prob = remake(problem, u0=init)
+        sol = solve(prob, Tsit5(), reltol=1e-8, save_everystep=false)
+        return sol[end]
+    end
+
+    out = spzeros(dimension(system),dimension(system))
+    out[1:2,1:2] = ForwardDiff.jacobian(solvesystem, x[1:2])
+    for i in 3:dimension(system)
+        out[i,i] = exp(-τ)
+    end
+
+    return out
 end
 
 #############################
