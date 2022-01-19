@@ -6,11 +6,12 @@ include("helper.jl")
 @info("Initializing Figure...")
 
 noto_sans = "./resources/NotoSans-Regular.ttf"
+noto_sans_bold=  "./resources/NotoSans-Bold.ttf"
 
 tickfontsize    = 28
 labelfontsize   = 32
 
-f = Figure(font=noto_sans, resolution=(8000,800))
+f = Figure(font=noto_sans, resolution=(800,800))
 
 
 ####################################
@@ -156,15 +157,15 @@ Threads.@threads for i in 1:length(u_grid)
     for j in 1:length(u_grid)
         u₀ = [u_grid[i], u_grid[j]]
         dx = ForwardDiff.jacobian(simsystem,u₀)
-        ~, Σ, Vt = svd(dx)
+        ~, Σ, V = svd(dx)
         # Force counterclockwise
         test_vec = [u_grid[j], -u_grid[i]]
-        if dot(test_vec,Vt[1,:]) < 0
-            out_u[i,j] = Vt[1,1]
-            out_v[i,j] = Vt[1,2]
+        if dot(test_vec,V[:,1]) < 0
+            out_u[i,j] = V[1,1]
+            out_v[i,j] = V[2,1]
         else
-            out_u[i,j] = -Vt[1,1]
-            out_v[i,j] = -Vt[1,2]
+            out_u[i,j] = -V[1,1]
+            out_v[i,j] = -V[2,1]
         end
     end
 end
@@ -186,6 +187,19 @@ arrows!(    ax4,
     
 xlims!(ax4, (-4,4))
 ylims!(ax4, (-4,4))
+
+
+##########################################
+########### Panel Labels  ################
+##########################################
+
+Label(f[1,1,TopLeft()], "A", textsize = 34, padding=(0,5,5,0), halign=:right, font = noto_sans_bold)
+Label(f[1,2,TopLeft()], "B", textsize = 34, padding=(0,5,5,0), halign=:right, font = noto_sans_bold)
+Label(f[2,1,TopLeft()], "C", textsize = 34, padding=(0,5,5,0), halign=:right, font = noto_sans_bold)
+Label(f[2,2,TopLeft()], "D", textsize = 34, padding=(0,5,5,0), halign=:right, font = noto_sans_bold)
+
+colgap!(f.layout, 0)
+rowgap!(f.layout, 0)
 
 ##########################################
 ############### Save Plot ################
