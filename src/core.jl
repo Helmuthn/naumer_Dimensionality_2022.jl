@@ -11,7 +11,7 @@ using EllipsisNotation
 ################ Random Sampling ################
 #################################################
 
-export randomPSD, samplePSD
+export randomPSD, samplePSD, sampleStateSpace
 
 """
     randomPSD([rng = GLOBAL_RNG,] n, λ)
@@ -103,6 +103,7 @@ end
 #################################################
 
 export nearestNeighbor, buildNearestNeighbor, localAverage
+export min_dist, localAverageWeights
 
 """
     min_dist(v, D)
@@ -119,9 +120,6 @@ assumes last axis of `D` indexes the vectors.
     (out, out_ind)
 
 Where `out` is the closest vector, and `out_ind` is the position.
-
-### Notes
-This function is not exported
 """
 function min_dist(v,D)
     alloc = zeros(size(v))
@@ -898,7 +896,6 @@ function ValueFunctionApproximation_LocalAverage_precompute(    system::Abstract
 
     # Apply Value Iteration 
     for i in 1:max_iterations
-        @info i
         valueIterate_LocalAverage_precompute!( updateValues, 
                                                γ, 
                                                psdSamples,
@@ -984,7 +981,6 @@ function ValueFunctionApproximation_LocalAverage(   system::AbstractSystem,
 
     # Apply Value Iteration 
     for i in 1:max_iterations
-        @info i
         valueIterate_LocalAverage!( updateValues, 
                                     γ, 
                                     jacobianList, 
@@ -1170,7 +1166,7 @@ Updates the state based on the measurement according to the Extended Kalman Filt
 ### Returns
 The updated state vector
 """
-function stateupdate_EKF(prediction, crlb, observation, action, σ²)
+function stateupdate_EKF(prediction, covariance, observation, action, σ²)
     update = copy(prediction)
 
     num   = covariance * action * (observation - dot(action, prediction))
@@ -1186,6 +1182,7 @@ end
 ########################################
 
 export optimalaction_1DApprox, measurementvalue_1DApprox
+export actiongradientstep_1DApprox
 
 """
     measurementvalue_1DApprox(action, limitvector::Vector, crlb, σ²)
@@ -1202,17 +1199,68 @@ of the limiting behavior.
 ### Returns
 A value of the action which should be maximized to minimize the CRLB for prediction.
 """
-function measurementvalue_1DApprox(action, limitvector::Vector, crlb, σ²)
+function measurementvalue_1DApprox(action, limitvector::AbstractVector, crlb, σ²)
     u  = action
     v = limitvector
     Σu = crlb * u
 
     num   = dot(v, Σu)^2
-    denom = dot(u, Σu)^2 + σ² * dot(u, u)
+    denom = dot(u, Σu)^2 + σ² 
 
     return num/denom
 end
 
+"""
+    actiongradient_1DApprox(action, limitvector::Vector, crlb, σ²)
+
+Returns the gradient of the 1D approximation value in the N-sphere
+"""
+function actiongradient_1DApprox(action, limitvector::AbstractVector, crlb, σ²)
+    u  = action
+    v = limitvector
+    Σu = crlb * u
+    Σv = crlb * v
+
+    num   = dot(v, Σu)^2
+    denom = dot(u, Σu)^2 + σ²
+
+    gradient_num = 2 * (denom * dot(v, Σu) * Σv - num * (σ² * u + 2 * Σu))
+    gradient_denom = denom^2
+
+    gradient = gradient_num ./ gradient_denom
+    #f(a) = measurementvalue_1DApprox(a, limitvector, crlb, σ²)
+    #gradient = ForwardDiff.gradient(f, action)
+
+    # Project onto tangent space
+    gradient .-= dot(gradient, action) * action
+
+    return gradient
+end
+
+"""
+    exponentialmap_sphere(state::Vector, gradient::Vector, τ)
+
+Advances a state on an n-sphere along a particular gradient
+"""
+function exponentialmap_sphere(state::AbstractVector, gradient::AbstractVector, τ)
+    if gradient == zeros(length(gradient))
+        return state
+    end
+
+    speed = sqrt(sum(abs2,gradient))
+    return cos(speed * τ) * state + sin(speed * τ) * gradient ./ speed
+end
+
+
+"""
+    actiongradientstep_1DApprox(action, limitvector, crlb, σ², τ)
+
+Gradient step along action space.
+"""
+function actiongradientstep_1DApprox(action, limitvector, crlb, σ², τ)
+    gradient = actiongradient_1DApprox(action, limitvector, crlb, σ²)
+    return exponentialmap_sphere(action, gradient, τ)
+end
 
 """
     optimalaction_1DApprox(actionspace, limitvector::Vector, crlb, σ²)
@@ -1235,10 +1283,10 @@ function optimalaction_1DApprox(actionspace, limitvector::Vector, crlb, σ²)
     params = (limitvector, crlb, σ²)
 
     maxind = 1
-    maxval = measurementvalue_1DApprox(actionSpace[1], params...)
+    maxval = measurementvalue_1DApprox(actionspace[1], params...)
 
     for i = 2:length(actionspace)
-        val = measurementvalue_1DApprox(actionSpace[i], params...)
+        val = measurementvalue_1DApprox(actionspace[i], params...)
         if val > maxval
             maxval = val
             maxind = i
@@ -1276,3 +1324,7 @@ function optimalaction_1DApprox(actionspace, system::AbstractSystem, state, crlb
 
     return optimalaction_1DApprox(actionspace, limitvector, crlb, σ²)
 end
+
+
+
+
