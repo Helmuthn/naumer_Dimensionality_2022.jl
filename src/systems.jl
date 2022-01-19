@@ -111,7 +111,7 @@ Defines a linear system dx/dt = Ax
  - `dynamics::Matrix{T}` - Matrix defining dynamics
 """
 struct LinearSystem{T} <: AbstractSystem{T}
-    dynamics::Matrix{T}
+    dynamics::AbstractMatrix{T}
 end
 
 function differential(system::LinearSystem, x::Vector)
@@ -136,6 +136,9 @@ end
 #############################
 export VanDerPolSystem
 
+"""
+    VanDerPolSystem{T} <: AbstractSystem{T}
+"""
 struct VanDerPolSystem{T} <: AbstractSystem{T}
     μ::T
 end
@@ -229,7 +232,7 @@ function flowJacobian(x::Vector, τ, system::VanDerPolSystem_expanded)
         return sol[end]
     end
 
-    out = spzeros(dimension(system),dimension(system))
+    out = zeros(dimension(system),dimension(system))
     out[1:2,1:2] = ForwardDiff.jacobian(solvesystem, x[1:2])
     for i in 3:dimension(system)
         out[i,i] = exp(-τ)
@@ -243,6 +246,9 @@ end
 #############################
 export HopfSystem
 
+"""
+    HopfSystem{T} <: AbstractSystem{T}
+"""
 struct HopfSystem{T} <: AbstractSystem{T}
     λ::T
     b::T
@@ -291,6 +297,9 @@ end
 #############################
 export LorenzSystem
 
+"""
+    LorenzSystem{T} <: AbstractSystem{T}
+"""
 struct LorenzSystem{T} <: AbstractSystem{T}
     σ::T
     ρ::T
