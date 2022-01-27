@@ -38,7 +38,7 @@ basewidth = 2
 
 f = Figure(font=noto_sans, resolution=(1200,700), figure_padding=40)
 
-ax1 = Axis( f[1,1],
+ax1 = Axis( f[1,2],
             xticklabelsize=tickfontsize, 
             yticklabelsize=tickfontsize, 
             yticklabelpad=2,
@@ -62,10 +62,10 @@ l2 = lines!(ax1, 1:max_steps, Lorenz_optimal_sampling_trace ./ Lorenz_optimal_sa
 l3 = lines!(ax1, 1:max_steps, Lorenz_optimal_sampling_trace_ekf ./ Lorenz_optimal_sampling_trace, color=color_lst[2], linewidth=basewidth)
 l1 = lines!(ax1, 1:max_steps, Lorenz_approx_sampling_trace ./ Lorenz_optimal_sampling_trace,      color=color_lst[3], linewidth=basewidth)
 l4 = lines!(ax1, 1:max_steps, Lorenz_approx_sampling_trace_ekf./ Lorenz_optimal_sampling_trace,  color=color_lst[4], linewidth=basewidth)
-l5 = lines!(ax1, 1:max_steps, Lorenz_random_sampling_trace./ Lorenz_optimal_sampling_trace, color=:black)
+#l5 = lines!(ax1, 1:max_steps, Lorenz_random_sampling_trace./ Lorenz_optimal_sampling_trace, color=:black)
 
 
-ax2= Axis(  f[1,2],
+ax2= Axis(  f[1,1],
             xticklabelsize=tickfontsize, 
             yticklabelsize=tickfontsize, 
             yticklabelpad=2,
@@ -92,8 +92,8 @@ l1 = lines!(ax2, 1:max_steps, Hopf_approx_sampling_trace./ Hopf_optimal_sampling
 l4 = lines!(ax2, 1:max_steps, Hopf_approx_sampling_trace_ekf./ Hopf_optimal_sampling_trace,  color=color_lst[4], linewidth=basewidth)
 
 Legend(f[2,:], 
-       [l4, l1, l2, l3], 
-       ["1D Approximation EKF", "1D Approximation Oracle", "Dynamic Programming Oracle", "Dynamic Programming EKF"],
+       [l1, l4, l2, l3], 
+       ["1D Approximation Oracle", "1D Approximation EKF", "Dynamic Programming Oracle", "Dynamic Programming EKF"],
        orientation=:horizontal,
        nbanks=2,
        labelsize=36)

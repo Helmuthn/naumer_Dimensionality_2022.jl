@@ -2,30 +2,30 @@ using CairoMakie
 using naumer_ICML_2022
 using LinearAlgebra: tr, svd, dot, det, Diagonal, pinv, eigen
 using CSV
+using Random: MersenneTwister
 
 ################################################
 ########### Plot Parameters ####################
 ################################################
 
+mrng = MersenneTwister(1234)
+
 max_steps = 1000
-state = 2*randn(2)
+state = 2*randn(mrng, 2)
 state_cp = copy(state)
 crlb = [4.0 0; 0 4.0]
 
-
-b = -1
-a = 1
 τ = 0.01
 γ = 0.99
 actionSpace = [[sin(θ), cos(θ)] for θ in 0:.1:π]
 
-λ = .5
-psdSampleCount = [100]
-trajectorySampleCount = 20
+λ = 1
+psdSampleCount = [1000]
+trajectorySampleCount = 1
 timestepSampleCount = 1
 σ² = 1
 max_iterations = 1000
-d_max = 2
+d_max = 1
 
 #################################################
 ################# Data Generation ###############
@@ -41,7 +41,8 @@ random_sampling_trace[1]  = 8
 
 @info("Approximating Value Function")
 
-values, psdSamples, stateSamples = ValueFunctionApproximation_LocalAverage_precompute( system,
+values, psdSamples, stateSamples = ValueFunctionApproximation_LocalAverage_precompute( mrng,
+                                                                                      system,
                                                                             τ,
                                                                             γ,
                                                                             actionSpace,
@@ -74,7 +75,7 @@ state = state_cp
 for i in 2:max_steps
     global state
     global crlb
-    action = actionSpace[rand(1:length(actionSpace))]
+    action = actionSpace[rand(mrng, 1:length(actionSpace))]
 
     jacobian = flowJacobian(state, τ, system)
     crlb = updateCRLB(crlb, action, jacobian, σ²)

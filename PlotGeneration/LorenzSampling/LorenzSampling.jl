@@ -1,35 +1,34 @@
 using CairoMakie
 using naumer_ICML_2022
-using LinearAlgebra: tr, svd, dot
+using LinearAlgebra: tr, svd, dot, I
 using CSV
 using Random: MersenneTwister
 
 ################################################
 ########### Plot Parameters ####################
 ################################################
-rng = MersenneTwister(1234)
+mrng = MersenneTwister(1234)
 
 max_steps = 1000
-state = 2*randn(rng,3)
-state_cp = copy(state)
-crlb = [4.0 0 0; 0 4.0 0;0 0 4.0]
-
-τ = 0.05
-γ = 0.98
-actionSpace = [randn(3) for i in 1:200]
-for i in 1:200
+state     = 2*randn(mrng,3)#5*ones(3) 
+state_cp  = copy(state)
+crlb      = I(3) 
+τ = 0.01
+γ = 0.9
+actionSpace = [randn(mrng,3) for i in 1:50]
+for i in 1:50
     actionSpace[i] /= sqrt(sum(abs2,actionSpace[i]))
 end
 
-λ = 2
-psdSampleCount = [40]
-trajectorySampleCount = 50
+λ = 1
+psdSampleCount = [50]
+trajectorySampleCount = 100
 timestepSampleCount = 1
 σ² = 1
-max_iterations = 10000
-d_max = .1
+max_iterations = 1000
+d_max = 2
 
-T = 25
+T = 1
 
 #################################################
 ################# Data Generation ###############
@@ -38,19 +37,20 @@ T = 25
 system = LorenzSystem(10.0, 28.0, 8.0/3.0)
 
 
-optimal_sampling_trace  = zeros(max_steps)
-random_sampling_trace   = zeros(max_steps)
-approx_sampling_trace   = zeros(max_steps)
-optimal_sampling_trace_ekf   = zeros(max_steps)
+optimal_sampling_trace      = zeros(max_steps)
+random_sampling_trace       = zeros(max_steps)
+approx_sampling_trace       = zeros(max_steps)
+optimal_sampling_trace_ekf  = zeros(max_steps)
 approx_sampling_trace_ekf   = zeros(max_steps)
 
-optimal_sampling_trace[1]    = 12
-random_sampling_trace[1]     = 12
-random_sampling_trace[1]     = 12
+optimal_sampling_trace[1]   = tr(crlb)
+random_sampling_trace[1]    = tr(crlb)
+random_sampling_trace[1]    = tr(crlb)
 
 @info("Approximating Value Function")
 
-values, psdSamples, stateSamples = ValueFunctionApproximation_LocalAverage_precompute(system,
+values, psdSamples, stateSamples = ValueFunctionApproximation_LocalAverage_precompute(  mrng,
+                                                                                        system,
                                                                                         τ,
                                                                                         γ,
                                                                                         actionSpace,
@@ -71,9 +71,10 @@ for i in 2:max_steps
     global state
     global crlb
     global NN_Policy_tuple
-    action, index, state, crlb = LocalAverage_OptimalPolicy(  state,
-                                                                 crlb,
-                                                                 NN_Policy_tuple...)
+    action, index, state, crlb = LocalAverage_OptimalPolicy(    state,
+                                                                crlb,
+                                                                NN_Policy_tuple...)
+
     optimal_sampling_trace[i] = tr(crlb)
 end
 
@@ -83,9 +84,9 @@ end
 
 NN_Policy_tuple = (system, σ², τ, values, psdSamples, stateSamples, actionSpace, d_max)
 beliefState = zeros(3) 
-beliefCRLB = [4.0 0 0; 0 4.0 0; 0 0 4.0]
-crlb = [4.0 0 0; 0 4.0 0; 0 0 4.0]
-state = copy(state_cp)
+beliefCRLB  = I(3)
+crlb        = I(3)
+state       = copy(state_cp)
 
 for i in 2:max_steps
     global state
@@ -104,7 +105,7 @@ for i in 2:max_steps
     state = flow(state, τ, system)
 
     # Update Belief System
-    observation = dot(action, state) + sqrt(σ²) * randn()
+    observation = dot(action, state) + sqrt(σ²) * randn(mrng)
     jacobian = flowJacobian(beliefState, τ, system)
     beliefCRLB = updateCRLB(beliefCRLB, action, jacobian, σ²)
     beliefState = flow(beliefState, τ, system)
@@ -117,10 +118,7 @@ end
  
 @info("Solving Optimal Sampling 1D Approximation Problem")
 
-crlb = [4.0 0.0 0.0; 
-        0.0 4.0 0.0; 
-        0.0 0.0 4.0]
-
+crlb = I(3) 
 state = copy(state_cp)
 
 for i in 2:max_steps
@@ -145,10 +143,10 @@ end
 
 @info("Solving Optimal Sampling 1D Approximation Problem - EKF")
 
-crlb = [4.0 0 0; 0 4.0 0; 0 0 4.0]
+crlb = I(3)
 state = copy(state_cp)
 beliefState = zeros(3)
-beliefCRLB = [4.0 0 0; 0 4.0 0; 0 0 4.0]
+beliefCRLB = I(3)
 
 for i in 2:max_steps
     global state
@@ -165,7 +163,7 @@ for i in 2:max_steps
     state = flow(state, τ, system)
 
     # Update Belief System
-    observation = dot(action, state) + sqrt(σ²) * randn()
+    observation = dot(action, state) + sqrt(σ²) * randn(mrng)
     jacobian = flowJacobian(beliefState, τ, system)
     beliefCRLB = updateCRLB(beliefCRLB, action, jacobian, σ²)
     beliefState = flow(beliefState, τ, system)
@@ -177,13 +175,13 @@ end
 
 @info("Solving Random Sampling")
 
-crlb = [4.0 0 0; 0 4.0 0; 0.0 0.0 4.0]
+crlb = I(3)
 state = copy(state_cp)
                                              
 for i in 2:max_steps
     global state
     global crlb
-    action = actionSpace[rand(1:length(actionSpace))]
+    action = actionSpace[rand(mrng, 1:length(actionSpace))]
 
     jacobian = flowJacobian(state, τ, system)
     crlb = updateCRLB(crlb, action, jacobian, σ²)
@@ -197,10 +195,10 @@ end
 ################ Save Data CSV ##################
 #################################################
 
-CSV.write("LorenzSampling.csv",(random_sampling_trace = random_sampling_trace, 
-                                optimal_sampling_trace = optimal_sampling_trace,
-                                optimal_sampling_trace_ekf = optimal_sampling_trace_ekf,
-                                approx_sampling_trace = approx_sampling_trace,
-                                approx_sampling_trace_ekf = approx_sampling_trace_ekf,
+CSV.write("LorenzSampling.csv",(random_sampling_trace       = random_sampling_trace, 
+                                optimal_sampling_trace      = optimal_sampling_trace,
+                                optimal_sampling_trace_ekf  = optimal_sampling_trace_ekf,
+                                approx_sampling_trace       = approx_sampling_trace,
+                                approx_sampling_trace_ekf   = approx_sampling_trace_ekf,
                                 samples = Array(1:max_steps)))
 

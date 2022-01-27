@@ -2,13 +2,16 @@ using CairoMakie
 using naumer_ICML_2022
 using LinearAlgebra: tr, svd, dot, det, Diagonal, pinv, eigen
 using CSV
+using Random: MersenneTwister
 
 ################################################
 ########### Plot Parameters ####################
 ################################################
 
+mrng = MersenneTwister(1234)
+
 max_steps = 1000
-state = 2*randn(2)
+state = 2*randn(mrng, 2)
 state_cp = copy(state)
 crlb = [4.0 0; 0 4.0]
 
@@ -50,17 +53,18 @@ optimal_sampling_trace_ekf[1] = 8
 
 @info("Approximating Value Function")
 
-values, psdSamples, stateSamples = ValueFunctionApproximation_LocalAverage_precompute( system,
-                                                                            τ,
-                                                                            γ,
-                                                                            actionSpace,
-                                                                            λ,
-                                                                            psdSampleCount[1],
-                                                                            trajectorySampleCount,
-                                                                            timestepSampleCount,
-                                                                            σ²,
-                                                                            max_iterations,
-                                                                            d_max)
+values, psdSamples, stateSamples = ValueFunctionApproximation_LocalAverage_precompute(  mrng,
+                                                                                        system,
+                                                                                        τ,
+                                                                                        γ,
+                                                                                        actionSpace,
+                                                                                        λ,
+                                                                                        psdSampleCount[1],
+                                                                                        trajectorySampleCount,
+                                                                                        timestepSampleCount,
+                                                                                        σ²,
+                                                                                        max_iterations,
+                                                                                        d_max)
 
 @info("Solving Optimal Sampling Dynamic Programming Problem")
 
@@ -107,7 +111,7 @@ for i in 2:max_steps
     state = flow(state, τ, system)
 
     # Update Belief System
-    observation = dot(action, state) + sqrt(σ²) * randn()
+    observation = dot(action, state) + sqrt(σ²) * randn(mrng)
     jacobian = flowJacobian(beliefState, τ, system)
     beliefCRLB = updateCRLB(beliefCRLB, action, jacobian, σ²)
     beliefState = flow(beliefState, τ, system)
@@ -164,7 +168,7 @@ for i in 2:max_steps
     state = flow(state, τ, system)
 
     # Update Belief System
-    observation = dot(action, state) + sqrt(σ²) * randn()
+    observation = dot(action, state) + sqrt(σ²) * randn(mrng)
     jacobian = flowJacobian(beliefState, τ, system)
     beliefCRLB = updateCRLB(beliefCRLB, action, jacobian, σ²)
     beliefState = flow(beliefState, τ, system)
@@ -184,7 +188,7 @@ for i in 2:max_steps
     global crlb
 
     # Choose Action
-    action = actionSpace[rand(1:length(actionSpace))]
+    action = actionSpace[rand(mrng, 1:length(actionSpace))]
 
     # Update System
     jacobian = flowJacobian(state, τ, system)

@@ -3,7 +3,8 @@
 # The functions in this file could be applied to real data.
 
 using LinearAlgebra: qr, Diagonal, tr, det, svd, eigen, dot
-using Random: MersenneTwister, randexp, GLOBAL_RNG
+using Random: MersenneTwister, randexp, GLOBAL_RNG, AbstractRNG
+using Random
 using EllipsisNotation
 
 
@@ -26,7 +27,7 @@ exponentially distributed eigenvalues.
 ### Returns
 A random `n×n` matrix
 """
-function randomPSD(rng, n, λ)
+function randomPSD(rng::AbstractRNG, n, λ)
     mat = randn(rng,n,n)
     ortho, ~ = qr(mat)
     return ortho' * Diagonal(randexp(rng,n)/λ) * ortho
@@ -49,7 +50,7 @@ i.i.d. exponentially distributed eigenvalues.
 ### Returns
 An `n×n×K` array representing `K` random matrices
 """
-function samplePSD(rng, K, n, λ)
+function samplePSD(rng::AbstractRNG, K, n, λ)
     out = zeros(n,n,K)
     for i in 1:K
         out[:,:,i] = randomPSD(rng, n, λ)
@@ -79,24 +80,28 @@ A small i.i.d. Gaussian random vector is added after each step to avoid degenera
 ### Returns
 A 2D array representing `trajectorySampleCount * timestepCount` samples, where columns represent the state.
 """
-function sampleStateSpace(system::AbstractSystem, trajectorySampleCount, timestepCount, burnin, τ)
+function sampleStateSpace(rng::AbstractRNG, system::AbstractSystem, trajectorySampleCount, timestepCount, burnin, τ)
     out = zeros(dimension(system), trajectorySampleCount * timestepCount)
     state = zeros(dimension(system))
     for i in 1:trajectorySampleCount
         if burnin == 0
-            state .= 5*randn(dimension(system))
+            state .= 5*randn(rng, dimension(system))
         else
-            state = flow(5*randn(dimension(system)), burnin, system) 
+            state = flow(5*randn(rng, dimension(system)), burnin, system) 
         end
         for j in 1:timestepCount
             index = j + (i-1) * timestepCount
             out[:,i] .= state
-            state .= flow(state, τ, system) + .25 * randn(dimension(system))
+            state .= flow(state, τ, system) + .25 * randn(rng, dimension(system))
         end
     end
     return out
 end
 
+
+function sampleStateSpace(system::AbstractSystem, trajectorySampleCount, timestepCount, burnin, τ)
+    return sampleStateSpace(Random.GLOBAL_RNG, system, trajectorySampleCount, timestepCount, burnin, τ)
+end
 
 #################################################
 ################ Interpolation ##################
@@ -747,7 +752,8 @@ Computes `max_iterations` steps of value iteration.
 
 `values` is a 1D array indexed as crlbIndex + psdSampleCount * (stateIndex - 1)
 """
-function ValueFunctionApproximation_NearestNeighbor_precompute( system::AbstractSystem, 
+function ValueFunctionApproximation_NearestNeighbor_precompute( rng::AbstractRNG, 
+                                                                system::AbstractSystem, 
                                                                 τ,
                                                                 γ, 
                                                                 actionSpace, 
@@ -760,9 +766,9 @@ function ValueFunctionApproximation_NearestNeighbor_precompute( system::Abstract
 
     # Discretize the space
     stateSampleCount = trajectorySampleCount * timestepSampleCount
-    psdSamples   = samplePSD(psdSampleCount, dimension(system), λ) 
-    stateSamples = sampleStateSpace(system, trajectorySampleCount, timestepSampleCount, 0, τ)
-    values = rand(psdSampleCount*stateSampleCount)
+    psdSamples   = samplePSD(rng, psdSampleCount, dimension(system), λ) 
+    stateSamples = sampleStateSpace(rng, system, trajectorySampleCount, timestepSampleCount, 0, τ)
+    values = rand(rng, psdSampleCount*stateSampleCount)
     updateValues = copy(values)
 
     # Precompute the nearest-neighbor maps based on actions
@@ -797,6 +803,29 @@ function ValueFunctionApproximation_NearestNeighbor_precompute( system::Abstract
 end
 
 
+function ValueFunctionApproximation_NearestNeighbor_precompute( system::AbstractSystem, 
+                                                                τ,
+                                                                γ, 
+                                                                actionSpace, 
+                                                                λ = 1,
+                                                                psdSampleCount = 1000,
+                                                                trajectorySampleCount = 100,
+                                                                timestepSampleCount = 10,
+                                                                σ² = 1,
+                                                                max_iterations=50)
+
+    return  ValueFunctionApproximation_NearestNeighbor_precompute(Random.GLOBAL_RNG, 
+                                                                  system, 
+                                                                  τ,
+                                                                  γ, 
+                                                                  actionSpace, 
+                                                                  λ,
+                                                                  psdSampleCount,
+                                                                  trajectorySampleCount,
+                                                                  timestepSampleCount,
+                                                                  σ²,
+                                                                  max_iterations)
+end
 """
     ValueFunctionApproximation_LocalAverage_precompute(    system::AbstractSystem, 
                                                            τ,
@@ -841,7 +870,8 @@ Precomputes the local averaging weights to accelerate the value iteration steps.
 
 `values` is a 1D array indexed as crlbIndex + psdSampleCount * (stateIndex - 1)
 """
-function ValueFunctionApproximation_LocalAverage_precompute(    system::AbstractSystem, 
+function ValueFunctionApproximation_LocalAverage_precompute(    rng::AbstractRNG,
+                                                                system::AbstractSystem, 
                                                                 τ,
                                                                 γ, 
                                                                 actionSpace, 
@@ -855,9 +885,9 @@ function ValueFunctionApproximation_LocalAverage_precompute(    system::Abstract
 
     # Discretize the space
     stateSampleCount = trajectorySampleCount * timestepSampleCount
-    psdSamples   = samplePSD(psdSampleCount, dimension(system), λ) 
-    stateSamples = sampleStateSpace(system, trajectorySampleCount, timestepSampleCount, 0, τ)
-    values = rand(psdSampleCount*stateSampleCount)
+    psdSamples   = samplePSD(rng, psdSampleCount, dimension(system), λ) 
+    stateSamples = sampleStateSpace(rng, system, trajectorySampleCount, timestepSampleCount, 0, τ)
+    values = rand(rng, psdSampleCount*stateSampleCount)
     updateValues = copy(values)
 
     # Precompute the list of Jacobians
@@ -907,6 +937,33 @@ function ValueFunctionApproximation_LocalAverage_precompute(    system::Abstract
     end
 
     return values, psdSamples, stateSamples 
+end
+
+
+function ValueFunctionApproximation_LocalAverage_precompute(    system::AbstractSystem, 
+                                                                τ,
+                                                                γ, 
+                                                                actionSpace, 
+                                                                λ = 1,
+                                                                psdSampleCount = 1000,
+                                                                trajectorySampleCount = 100,
+                                                                timestepSampleCount = 10,
+                                                                σ² = 1,
+                                                                max_iterations=50,
+                                                                d_max=.05)
+
+    return ValueFunctionApproximation_LocalAverage_precompute(  Random.GLOBAL_RNG, 
+                                                                system, 
+                                                                τ,
+                                                                γ, 
+                                                                actionSpace, 
+                                                                λ,
+                                                                psdSampleCount,
+                                                                trajectorySampleCount,
+                                                                timestepSampleCount,
+                                                                σ²,
+                                                                max_iterations,
+                                                                d_max)
 end
 
 """

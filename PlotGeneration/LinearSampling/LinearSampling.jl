@@ -2,13 +2,15 @@ using CairoMakie
 using naumer_ICML_2022
 using LinearAlgebra: tr, svd, dot
 using CSV
+using Random: MersenneTwister
 
 ################################################
 ########### Plot Parameters ####################
 ################################################
+mrng = MersenneTwister(1234)
 
 max_steps = 1000
-state = 2*randn(2)
+state = 2*randn(mrng, 2)
 state_cp = copy(state)
 crlb = [4.0 0; 0 4.0]
 
@@ -44,7 +46,8 @@ optimal_sampling_trace[1] = dot([4,4], geometric_amplification)
 random_sampling_trace[1]  = dot([4,4], geometric_amplification)
 approx_sampling_trace[1]  = dot([4,4], geometric_amplification)
 
-values, psdSamples, stateSamples = ValueFunctionApproximation_LocalAverage_precompute(system,
+values, psdSamples, stateSamples = ValueFunctionApproximation_LocalAverage_precompute(  mrng, 
+                                                                                        system,
                                                                                         τ,
                                                                                         γ,
                                                                                         actionSpace,
@@ -65,8 +68,8 @@ for i in 2:max_steps
     global crlb
     global NN_Policy_tuple
     action, index, state, crlb = LocalAverage_OptimalPolicy( state,
-                                                                 crlb,
-                                                                 NN_Policy_tuple...)
+                                                             crlb,
+                                                             NN_Policy_tuple...)
     ~, S, ~ = svd(crlb)
     optimal_sampling_trace[i] = dot(S, geometric_amplification)
 end
@@ -104,7 +107,7 @@ state = copy(state_cp)
 for i in 2:max_steps
     global state
     global crlb
-    action = actionSpace[rand(1:length(actionSpace))]
+    action = actionSpace[rand(mrng, 1:length(actionSpace))]
 
     jacobian = flowJacobian(state, τ, system)
     crlb = inv(inv(crlb) + (action * action' / σ²))
