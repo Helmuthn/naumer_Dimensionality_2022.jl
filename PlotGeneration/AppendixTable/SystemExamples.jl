@@ -1,6 +1,8 @@
 using CairoMakie
 using DifferentialEquations
+using Random: MersenneTwister
 
+mrng = MersenneTwister(1234)
 
 ##################################
 ####### Plot Setup ###############
@@ -29,7 +31,7 @@ function morseFlow!(du, u, μ, t)
 end
 
 curve_count = 50
-u0 = 3 * randn(curve_count)
+u0 = 3 * randn(mrng, curve_count)
 
 solution_curves = zeros(101, curve_count)
 timings = 0:0.01:1
@@ -54,6 +56,7 @@ ax1 = Axis(  f[1,1],
 for i in 1:curve_count
     lines!(ax1, timings, solution_curves[:,i], color=:black)
 end
+xlims!(ax1,(0,1))
 
 
 ################################
@@ -67,7 +70,7 @@ function vanderpol!(du,u,μ,t)
 end
 
 curve_count = 20
-u0 = 5 * rand(2,curve_count) .- 2.5
+u0 = 5 * rand(mrng, 2,curve_count) .- 2.5
 
 solution_curves = zeros(201, 2, curve_count)
 
@@ -107,7 +110,7 @@ function hopf!(du,u,μ,t)
 end
 
 curve_count = 20
-u0 = 4 * rand(2,curve_count) .- 2.0
+u0 = 4 * rand(mrng,2,curve_count) .- 2.0
 
 solution_curves = zeros(201, 2, curve_count)
 
@@ -148,7 +151,7 @@ function lorenz!(du,u,μ,t)
 end
 
 curve_count = 3
-u0 = 100 * rand(3,curve_count) .- 50.0
+u0 = 100 * rand(mrng, 3,curve_count) .- 50.0
 
 solution_curves = zeros(2001, 3, curve_count)
 
@@ -180,7 +183,7 @@ end
 ############################3#
 
 heat = zeros(100,200)
-heat[:,1] = randn(100) .+ 1
+heat[:,1] = randn(mrng, 100) .+ 1
 heat[50:60,1] .+= 4
 heat[90:100,1] .+= 4
 α = 0.2
@@ -198,15 +201,10 @@ ax5 = Axis( f[1,5],
             yticklabelpad=2,
             xlabel="τ", ylabel = "x",
             xlabelsize=labelfontsize,
-            ylabelsize=labelfontsize,
-            xticksvisible = false,
-            yticksvisible = false,
-            xticklabelvisible = false,
-            yticklabelvisible = false)
+            ylabelsize=labelfontsize)
 
-heatmap!(ax5, heat')
-
-hidedecorations!(ax5)
+hm = heatmap!(ax5, (1:200)./100.0, (1:100)./100.0, heat')
+Colorbar(f[1,6],hm, ticklabelsize=tickfontsize)
 
 
 save("tablePlot.pdf", f)

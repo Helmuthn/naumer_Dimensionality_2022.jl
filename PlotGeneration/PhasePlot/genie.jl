@@ -24,7 +24,7 @@ ax1 = Axis(f[1,1], aspect=1,
             xticklabelsize=tickfontsize, 
             yticklabelsize=tickfontsize, 
             yticklabelpad=2,
-            xlabel="x", ylabel = "y",
+            xlabel="x₍₁₎", ylabel = "x₍₂₎",
             xlabelsize=labelfontsize,
             ylabelsize=labelfontsize)
 u_grid = -4:.333:4
@@ -63,7 +63,7 @@ ax2 = Axis( f[1,2], aspect=1,
             xticklabelsize=tickfontsize, 
             yticklabelsize=tickfontsize, 
             yticklabelpad=2,
-            xlabel="x", ylabel = "y",
+            xlabel="x₍₁₎", ylabel = "x₍₂₎",
             xlabelsize=labelfontsize,
             ylabelsize=labelfontsize)
 
@@ -134,7 +134,7 @@ ax3 = Axis( f[2,2],
             xticklabelsize=tickfontsize, 
             yticklabelsize=tickfontsize, 
             yticklabelpad=2,
-            xlabel="x", ylabel = "y",
+            xlabel="x₍₁₎", ylabel = "x₍₂₎",
             xlabelsize=labelfontsize,
             ylabelsize=labelfontsize)
 
@@ -158,8 +158,14 @@ Threads.@threads for i in 1:length(u_grid)
         u₀ = [u_grid[i], u_grid[j]]
         dx = ForwardDiff.jacobian(simsystem,u₀)
         ~, Σ, V = svd(dx)
-        # Force counterclockwise
-        test_vec = [u_grid[j], -u_grid[i]]
+        # Force consistent arrow direction
+        if u_grid[j] > 2.5 && u_grid[i] > 2.5
+            test_vec = [1, 1]
+        elseif u_grid[j] < -2.5 && u_grid[i] < -2.5
+            test_vec = [-1, -1] 
+        else
+            test_vec = [u_grid[j], -u_grid[i]]
+        end
         if dot(test_vec,V[:,1]) < 0
             out_u[i,j] = V[1,1]
             out_v[i,j] = V[2,1]
@@ -175,7 +181,7 @@ ax4 = Axis(f[2,1], aspect=1,
             xticklabelsize=tickfontsize, 
             yticklabelsize=tickfontsize, 
             yticklabelpad=2,
-            xlabel="x", ylabel = "y",
+            xlabel="x₍₁₎", ylabel = "x₍₂₎",
             xlabelsize=labelfontsize,
             ylabelsize=labelfontsize)
 

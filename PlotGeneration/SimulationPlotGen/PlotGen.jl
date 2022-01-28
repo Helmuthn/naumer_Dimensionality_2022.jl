@@ -149,10 +149,14 @@ l3 = lines!(ax3, 1:max_steps, Lorenz_random_sampling_trace .* 2 ./ 3, color=colo
 l1 = lines!(ax3, 1:max_steps, Lorenz_optimal_sampling_trace,          color=color_lst[3], linewidth=basewidth)
 l4 = lines!(ax3, 1:max_steps, Lorenz_approx_sampling_trace,           color=color_lst[4], linewidth=basewidth)
 
+l1elem = LineElement(color=color_lst[3], linewidth=10)
+l2elem = LineElement(color=color_lst[1], linewidth=10)
+l3elem = LineElement(color=color_lst[2], linewidth=10)
+l4elem = LineElement(color=color_lst[4], linewidth=10)
 
 Legend(f[3,:], 
-       [l4, l1, l2, l3], 
-       ["1D Approximation", "Dynamic Programming", "Random Sampling", "Dimension Reduction"], 
+       [l4elem, l1elem, l2elem, l3elem], 
+       ["1D Limit Set", "Dynamic Programming", "Random Sampling", "Dimension Reduction"], 
        orientation=:horizontal,
        nbanks=2,
        labelsize=36)

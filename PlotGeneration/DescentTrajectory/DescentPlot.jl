@@ -79,10 +79,17 @@ ax2 = Axis( fig[1,3],
             xlabelsize=labelfontsize,
             ylabelsize=labelfontsize,
             titlesize=labelfontsize,
-            ratio=AxisAspect(1))
+            ratio=AxisAspect(1),
+            xminorticksvisible = true,
+            xminorgridvisible  = true,
+            xminorticks = IntervalsBetween(10),
+            yminorticksvisible = true,
+            yminorgridvisible  = true,
+            yminorticks = IntervalsBetween(5))
 
 
 lines!(ax2,1:100, rewards, color=:black, width=2) 
+xlims!(ax2,(0,100))
 
 Colorbar(fig[1, 2], hm, ticklabelsize=tickfontsize)
 

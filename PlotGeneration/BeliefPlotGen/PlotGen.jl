@@ -91,9 +91,17 @@ l3 = lines!(ax2, 1:max_steps, Hopf_optimal_sampling_trace_ekf./ Hopf_optimal_sam
 l1 = lines!(ax2, 1:max_steps, Hopf_approx_sampling_trace./ Hopf_optimal_sampling_trace,      color=color_lst[3], linewidth=basewidth)
 l4 = lines!(ax2, 1:max_steps, Hopf_approx_sampling_trace_ekf./ Hopf_optimal_sampling_trace,  color=color_lst[4], linewidth=basewidth)
 
+
+
+l1elem = LineElement(color=color_lst[3], linewidth=10)
+l2elem = LineElement(color=color_lst[1], linewidth=10)
+l3elem = LineElement(color=color_lst[2], linewidth=10)
+l4elem = LineElement(color=color_lst[4], linewidth=10)
+
+
 Legend(f[2,:], 
-       [l1, l4, l2, l3], 
-       ["1D Approximation Oracle", "1D Approximation EKF", "Dynamic Programming Oracle", "Dynamic Programming EKF"],
+       [l1elem, l4elem, l2elem, l3elem], 
+       ["1D Limit Set Oracle", "1D Limit Set EKF", "Dynamic Programming Oracle", "Dynamic Programming EKF"],
        orientation=:horizontal,
        nbanks=2,
        labelsize=36)

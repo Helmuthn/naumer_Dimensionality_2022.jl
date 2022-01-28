@@ -12,10 +12,10 @@ dist3 = f.dist3
 
 noto_sans = "../resources/NotoSans-Regular.ttf"
 
-tickfontsize = 24
-labelfontsize = 28
+tickfontsize = 28
+labelfontsize = 34
 
-f = Figure(resolution = (800,600), font=noto_sans)
+f = Figure(resolution = (750,450), font=noto_sans)
 
 ax = Axis(  f[1,1],
             xticklabelsize=tickfontsize, 
@@ -33,10 +33,16 @@ ax = Axis(  f[1,1],
             xminorgridvisible = true,
             xminorticks = IntervalsBetween(10))
 
-l1 = lines!(ax, 1:length(dist1), dist1, color = color_lst[1], linewidth=2)
-l2 = lines!(ax, 1:length(dist2), dist2, color = color_lst[2], linewidth=2)
-l3 = lines!(ax, 1:length(dist3), dist3, color = color_lst[3], linewidth=2)
+l1 = lines!(ax, 1:length(dist1), dist1, color = color_lst[1], linewidth=3)
+l2 = lines!(ax, 1:length(dist2), dist2, color = color_lst[2], linewidth=3)
+l3 = lines!(ax, 1:length(dist3), dist3, color = color_lst[3], linewidth=3)
 
-Legend(f[2,1], [l1,l2,l3], ["1D", "2D", "3D"], orientation=:horizontal, labelsize=labelfontsize)
+l1elem = LineElement(color=color_lst[1], linewidth=10)
+l2elem = LineElement(color=color_lst[2], linewidth=10)
+l3elem = LineElement(color=color_lst[3], linewidth=10)
+
+xlims!(ax,(1,length(dist1)))
+
+Legend(f[1,2], [l3elem,l2elem,l1elem], ["3D", "2D", "1D"], labelsize=labelfontsize)
 
 save("SamplingPlot.pdf",f)
