@@ -374,6 +374,34 @@ using LinearAlgebra: eigvals
         @test NearestNeighbor_OptimalPolicy(state, crlb, system, σ², τ, values, psdSamples, stateSamples, actionSpace)[2] == 2
     end
 
+    @testset "LocalAverage_OptimalPolicy" begin
+        state = [1, 0]
+        crlb = [1.0 0; 0 1.0]
+        system = LinearSystem([0 0; 0 0])
+        σ² = 0.1
+        τ = 1.0
+        values = [1, 2]
+        psdSamples = zeros(2,2,2)
+        psdSamples[:,:,1] = [.1 0; 0 1]
+        psdSamples[:,:,2] = [1 0; 0 .1]
+        stateSamples = zeros(2,1)
+        stateSamples[:,1] = [1,0]
+
+        d_max = 1
+        
+        a1 = [1.0, 0.0]
+        a2 = [0.0, 1.0]
+        actionSpace = [a1]
+        
+        # Test for single action
+        @test LocalAverage_OptimalPolicy(state, crlb, system, σ², τ, values, psdSamples, stateSamples, actionSpace, d_max)[2] == 1
+
+        # Test for actual decision
+        actionSpace = [a1, a2]
+        @test LocalAverage_OptimalPolicy(state, crlb, system, σ², τ, values, psdSamples, stateSamples, actionSpace, d_max)[2] == 1
+        actionSpace = [a2, a1]
+        @test LocalAverage_OptimalPolicy(state, crlb, system, σ², τ, values, psdSamples, stateSamples, actionSpace, d_max)[2] == 2
+    end
 end
 
 @testset "Extended Kalman Filter" begin
