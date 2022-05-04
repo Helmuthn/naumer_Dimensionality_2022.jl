@@ -55,6 +55,7 @@ end
     targetState = [0, 0.1]
     d_max = eps()
     @test localAverage(targetPSD, targetState, psdSamples, stateSamples, values, d_max) ≈ 1
+    @test_throws ArgumentError localAverage(targetPSD, targetState, psdSamples, stateSamples, values[1:2], d_max)
 
 end
 

@@ -211,6 +211,9 @@ A local average approximation at a given location
 values is indexed as ...
 """
 function localAverage(targetPSD, targetState, psdSamples, stateSamples, values, d_max)
+    if length(values) != size(psdSamples)[end] * size(stateSamples)[end]
+        throw(ArgumentError("`values` length mismatch with sample counts"))
+    end
     num   = 0
     denom = 0
     psdScratch   = zeros(size(targetPSD))
