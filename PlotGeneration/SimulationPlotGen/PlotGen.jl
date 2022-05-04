@@ -39,38 +39,38 @@ max_steps = length(samples)
 noto_sans = "./resources/NotoSans-Regular.ttf"
 noto_sans_bold = "./resources/NotoSans-Bold.ttf"
 
-tickfontsize    = 32
-labelfontsize   = 38
+tickfontsize    = 26
+labelfontsize   = 30
 basewidth = 2
 
 
-f = Figure(font=noto_sans, resolution=(1200,1100), figure_padding=40)
+f = Figure(font=noto_sans, resolution=(1200,550), figure_padding=40)
 
 
-ax0 = Axis( f[1,1],
-            xticklabelsize=tickfontsize, 
-            yticklabelsize=tickfontsize, 
-            yticklabelpad=2,
-            xlabel="Sample", ylabel = "Tr(Σ)",
-            xlabelsize=labelfontsize,
-            ylabelsize=labelfontsize,
-            yscale = log10,
-            yminorticksvisible = true,
-            yminorgridvisible = true,
-            yminorticks = IntervalsBetween(10),
-            xminorticksvisible = true,
-            xminorgridvisible = true,
-            xminorticks = IntervalsBetween(10),
-            title="Static Value",
-            titlesize=labelfontsize)
+#ax0 = Axis( f[1,1],
+#            xticklabelsize=tickfontsize, 
+#            yticklabelsize=tickfontsize, 
+#            yticklabelpad=2,
+#            xlabel="Sample", ylabel = "Tr(Σ)",
+#            xlabelsize=labelfontsize,
+#            ylabelsize=labelfontsize,
+#            yscale = log10,
+#            yminorticksvisible = true,
+#            yminorgridvisible = true,
+#            yminorticks = IntervalsBetween(10),
+#            xminorticksvisible = true,
+#            xminorgridvisible = true,
+#            xminorticks = IntervalsBetween(10),
+#            title="Static Value",
+#            titlesize=labelfontsize)
+#
+#l2 = lines!(ax0, 1:max_steps, static_random_sampling_trace, color=color_lst[1], linewidth=basewidth+2)
+#l1 = lines!(ax0, 1:max_steps, static_optimal_sampling_trace, color=color_lst[3], linewidth=basewidth)
+#
+#ylims!(ax0,(5e-4,1))
+#xlims!(ax0,(0,1000))
 
-l2 = lines!(ax0, 1:max_steps, static_random_sampling_trace, color=color_lst[1], linewidth=basewidth+2)
-l1 = lines!(ax0, 1:max_steps, static_optimal_sampling_trace, color=color_lst[3], linewidth=basewidth)
-
-ylims!(ax0,(5e-4,1))
-xlims!(ax0,(0,1000))
-
-ax1 = Axis(  f[1,2],
+ax1 = Axis(  f[1,1],
             xticklabelsize=tickfontsize, 
             yticklabelsize=tickfontsize, 
             yticklabelpad=2,
@@ -96,7 +96,7 @@ l1 = lines!(ax1, 1:max_steps, Linear_optimal_sampling_trace, color=color_lst[3],
 l4 = lines!(ax1, 1:max_steps, Linear_approx_sampling_trace, color=color_lst[4], linewidth=basewidth)
 
 
-ax2= Axis(  f[2,1],
+ax2= Axis(  f[1,2],
             xticklabelsize=tickfontsize, 
             yticklabelsize=tickfontsize, 
             yticklabelpad=2,
@@ -124,7 +124,7 @@ l4 = lines!(ax2, 1:max_steps, Hopf_approx_sampling_trace,      color=color_lst[4
 
 
 
-ax3= Axis(  f[2,2],
+ax3= Axis(  f[1,3],
             xticklabelsize=tickfontsize, 
             yticklabelsize=tickfontsize, 
             yticklabelpad=2,
@@ -154,19 +154,20 @@ l2elem = LineElement(color=color_lst[1], linewidth=10)
 l3elem = LineElement(color=color_lst[2], linewidth=10)
 l4elem = LineElement(color=color_lst[4], linewidth=10)
 
-Legend(f[3,:], 
+Legend(f[2,:], 
        [l4elem, l1elem, l2elem, l3elem], 
        ["1D Limit Set", "Dynamic Programming", "Random Sampling", "Dimension Reduction"], 
        orientation=:horizontal,
        nbanks=2,
-       labelsize=36)
+       labelsize=30,
+       colgap=40)
 
 
-colgap!(f.layout,60)
+colgap!(f.layout,40)
 
-Label(f[1,1,TopLeft()], "A", font=noto_sans_bold, textsize = 40, halign=:left, valign=:bottom, padding=(25,0,10,0))
-Label(f[1,2,TopLeft()], "B", font=noto_sans_bold, textsize = 40, halign=:left, valign=:bottom, padding=(25,0,10,0))
-Label(f[2,1,TopLeft()], "C", font=noto_sans_bold, textsize = 40, halign=:left, valign=:bottom, padding=(25,0,10,0))
-Label(f[2,2,TopLeft()], "D", font=noto_sans_bold, textsize = 40, halign=:left, valign=:bottom, padding=(25,0,10,0))
+Label(f[1,1,TopLeft()], "A", font=noto_sans_bold, textsize = 32, halign=:left, valign=:bottom, padding=(25,0,10,0))
+Label(f[1,2,TopLeft()], "B", font=noto_sans_bold, textsize = 32, halign=:left, valign=:bottom, padding=(25,0,10,0))
+Label(f[1,3,TopLeft()], "C", font=noto_sans_bold, textsize = 32, halign=:left, valign=:bottom, padding=(50,0,10,0))
+#Label(f[1,4,TopLeft()], "D", font=noto_sans_bold, textsize = 32, halign=:left, valign=:bottom, padding=(50,0,10,0))
 
 save("out/FinalSim.pdf",f)

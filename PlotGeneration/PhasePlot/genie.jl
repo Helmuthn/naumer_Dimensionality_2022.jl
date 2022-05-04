@@ -11,7 +11,7 @@ noto_sans_bold=  "./resources/NotoSans-Bold.ttf"
 tickfontsize    = 28
 labelfontsize   = 32
 
-f = Figure(font=noto_sans, resolution=(800,800))
+f = Figure(font=noto_sans, resolution=(1600,400))
 
 
 ####################################
@@ -129,7 +129,7 @@ end
 results = reshape(results,length(u_grid),length(u_grid))
 
 
-ax3 = Axis( f[2,2], 
+ax3 = Axis( f[1,4], 
             aspect=1,
             xticklabelsize=tickfontsize, 
             yticklabelsize=tickfontsize, 
@@ -177,7 +177,7 @@ Threads.@threads for i in 1:length(u_grid)
 end
 
 
-ax4 = Axis(f[2,1], aspect=1,
+ax4 = Axis(f[1,3], aspect=1,
             xticklabelsize=tickfontsize, 
             yticklabelsize=tickfontsize, 
             yticklabelpad=2,
@@ -201,8 +201,8 @@ ylims!(ax4, (-4,4))
 
 Label(f[1,1,TopLeft()], "A", textsize = 34, padding=(0,5,5,0), halign=:right, font = noto_sans_bold)
 Label(f[1,2,TopLeft()], "B", textsize = 34, padding=(0,5,5,0), halign=:right, font = noto_sans_bold)
-Label(f[2,1,TopLeft()], "C", textsize = 34, padding=(0,5,5,0), halign=:right, font = noto_sans_bold)
-Label(f[2,2,TopLeft()], "D", textsize = 34, padding=(0,5,5,0), halign=:right, font = noto_sans_bold)
+Label(f[1,3,TopLeft()], "C", textsize = 34, padding=(0,5,5,0), halign=:right, font = noto_sans_bold)
+Label(f[1,4,TopLeft()], "D", textsize = 34, padding=(0,5,5,0), halign=:right, font = noto_sans_bold)
 
 colgap!(f.layout, 0)
 rowgap!(f.layout, 0)
