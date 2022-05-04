@@ -346,6 +346,21 @@ end
     @test true
 end
 
+@testset "Extended Kalman Filter" begin
+    @testset "stateupdate_EKF" begin
+        prediction = [1.0, 0.0]
+        covariance = [1.0 0; 0 1.0]
+        observation = 1
+        action = [1.0, 0]
+        σ² = 1
+
+        @test stateupdate_EKF(prediction, covariance, observation, action, σ²) ≈ prediction
+
+        observation = 2
+        @test stateupdate_EKF(prediction, covariance, observation, action, σ²) ≈ [2.0,0.0]
+    end
+end
+
 @testset "1D Approximation Method" begin
     @testset "measurementvalue_1DApprox" begin
         action = [1.0, 0.0]
