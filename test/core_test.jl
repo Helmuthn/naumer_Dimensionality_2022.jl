@@ -198,7 +198,7 @@ end
     @test new_values[1] ≈ 3.0
 end
 
-@testset "valueIterate_NearestNeighbor_precompute!" begin
+@testset "ValueFunctionApproximation_NearestNeighbor_precompute!" begin
     # Basic test to ensure there are no crashes
     actionSpace = [[1.0,0], [0,1.0]] 
     system = LinearSystem([0.5 0; 0 0.5])
