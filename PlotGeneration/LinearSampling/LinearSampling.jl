@@ -1,5 +1,5 @@
 using CairoMakie
-using naumer_ICML_2022
+using naumer_Dimensionality_2022
 using LinearAlgebra: tr, svd, dot
 using CSV
 using Random: MersenneTwister

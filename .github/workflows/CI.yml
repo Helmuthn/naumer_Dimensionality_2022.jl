@@ -63,6 +63,6 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
-            using naumer_ICML_2022
-            DocMeta.setdocmeta!(naumer_ICML_2022, :DocTestSetup, :(using naumer_ICML_2022); recursive=true)
-            doctest(naumer_ICML_2022)'
+            using naumer_Dimensionality_2022
+            DocMeta.setdocmeta!(naumer_Dimensionality_2022, :DocTestSetup, :(using naumer_Dimensionality_2022); recursive=true)
+            doctest(naumer_Dimensionality_2022)'

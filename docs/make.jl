@@ -1,16 +1,16 @@
-using naumer_ICML_2022
+using naumer_Dimensionality_2022
 using Documenter
 
-DocMeta.setdocmeta!(naumer_ICML_2022, :DocTestSetup, :(using naumer_ICML_2022); recursive=true)
+DocMeta.setdocmeta!(naumer_Dimensionality_2022, :DocTestSetup, :(using naumer_Dimensionality_2022); recursive=true)
 
 makedocs(;
-    modules=[naumer_ICML_2022],
+    modules=[naumer_Dimensionality_2022],
     authors="Helmuth Naumer <hnaumer2@illinois.edu>",
-    repo="https://github.com/helmuthn/naumer_ICML_2022.jl/blob/{commit}{path}#{line}",
-    sitename="naumer_ICML_2022.jl",
+    repo="https://github.com/helmuthn/naumer_Dimensionality_2022.jl/blob/{commit}{path}#{line}",
+    sitename="naumer_Dimensionality_2022.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://helmuthn.github.io/naumer_ICML_2022.jl",
+        canonical="https://helmuthn.github.io/naumer_Dimensionality_2022.jl",
         assets=String[],
     ),
     pages=[
@@ -19,6 +19,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="Helmuthn/naumer_ICML_2022.jl",
+    repo="Helmuthn/naumer_Dimensionality_2022.jl",
     devbranch="main",
 )

@@ -1,4 +1,4 @@
-module naumer_ICML_2022
+module naumer_Dimensionality_2022
 
 # Include the other files
 # Include systems.jl first because of abstractSystem

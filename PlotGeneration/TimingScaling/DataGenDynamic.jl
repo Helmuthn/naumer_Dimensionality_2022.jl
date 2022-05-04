@@ -1,4 +1,4 @@
-using naumer_ICML_2022
+using naumer_Dimensionality_2022
 using LinearAlgebra: I, tr, norm, svd
 using CSV
 using BenchmarkTools

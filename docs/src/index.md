@@ -1,7 +1,7 @@
 # naumer\_ICML\_2022
 
 ## Overview
-The repository [naumer\_ICML\_2022](https://github.com/helmuthn/naumer_ICML_2022.jl) contains code related to my anticipated ICML submission in 2022.
+The repository [naumer\_ICML\_2022](https://github.com/helmuthn/naumer_Dimensionality_2022.jl) contains code related to my anticipated ICML submission in 2022.
 
 The code is split into two main sections.
 
@@ -11,7 +11,7 @@ The code is split into two main sections.
 
 This library is not registered through the Julia package registry, but the package manager can still install it through: 
 
-    ] add https://github.com/helmuthn/naumer_ICML_2022.jl
+    ] add https://github.com/helmuthn/naumer_Dimensionality_2022.jl
 
 
 ## Random Sampling

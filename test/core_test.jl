@@ -1,4 +1,4 @@
-using naumer_ICML_2022, Test
+using naumer_Dimensionality_2022, Test
 using LinearAlgebra: eigvals
 
 

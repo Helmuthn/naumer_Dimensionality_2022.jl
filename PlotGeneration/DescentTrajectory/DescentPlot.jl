@@ -1,7 +1,7 @@
 using CSV
 using LinearAlgebra: dot, I
 using CairoMakie
-using naumer_ICML_2022
+using naumer_Dimensionality_2022
 
 const Σ = [1.0  0.1  0.1;
            0.1  1.0  0.1;

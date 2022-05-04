@@ -1,4 +1,4 @@
-using naumer_ICML_2022
+using naumer_Dimensionality_2022
 using SafeTestsets
 
 # Break up the testing into a per-file setup
