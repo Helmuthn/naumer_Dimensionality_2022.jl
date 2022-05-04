@@ -46,10 +46,16 @@ end
     stateSamples = zeros(2,2)
     stateSamples[:,1] = [1,0]
     stateSamples[:,2] = [0,1]
-    values = [1,2]
+    values = [1,2,1,2]
     d_max = 2
 
     @test localAverage(targetPSD, targetState, psdSamples, stateSamples, values, d_max) ≈ 1.5
+
+    # Reduction to nearest neighbor
+    targetState = [0, 0.1]
+    d_max = eps()
+    @test localAverage(targetPSD, targetState, psdSamples, stateSamples, values, d_max) ≈ 1
+
 end
 
 @testset "localAverageWeights" begin
@@ -60,7 +66,7 @@ end
     stateSamples = zeros(2,2)
     stateSamples[:,1] = [1,0]
     stateSamples[:,2] = [0,1]
-    values = [1,2]
+    values = [1,2,1,2]
     d_max = 2
     @test localAverageWeights(targetPSD, targetState, psdSamples, stateSamples, d_max)[2] ≈ [0.25,0.25,0.25,0.25]
 end
