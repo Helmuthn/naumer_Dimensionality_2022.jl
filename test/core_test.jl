@@ -29,7 +29,13 @@ end
 end
 
 @testset "sampleStateSpace" begin
-    # TODO
+    # Minimal crash test for global RNG (With Burnin)
+    system = LinearSystem([0.5 0; 0 0.5])
+    trajectorySampleCount = 2
+    timestepCount = 2
+    burnin = 1
+    τ = 1
+    @test size(sampleStateSpace(system, trajectorySampleCount, timestepCount, burnin, τ)) == (2,trajectorySampleCount*timestepCount)
 end
 
 @testset "localAverage" begin
