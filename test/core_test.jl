@@ -32,6 +32,33 @@ end
     # TODO
 end
 
+@testset "localAverage" begin
+    # 2D Form
+    targetPSD = [0 0; 0 0]
+    targetState = [0, 0]
+    psdSamples = zeros(2,2,2)
+    stateSamples = zeros(2,2)
+    stateSamples[:,1] = [1,0]
+    stateSamples[:,2] = [0,1]
+    values = [1,2]
+    d_max = 2
+
+    @test localAverage(targetPSD, targetState, psdSamples, stateSamples, values, d_max) ≈ 1.5
+end
+
+@testset "localAverageWeights" begin
+    # 2D Form
+    targetPSD = [0 0; 0 0]
+    targetState = [0, 0]
+    psdSamples = zeros(2,2,2)
+    stateSamples = zeros(2,2)
+    stateSamples[:,1] = [1,0]
+    stateSamples[:,2] = [0,1]
+    values = [1,2]
+    d_max = 2
+    @test localAverageWeights(targetPSD, targetState, psdSamples, stateSamples, d_max)[2] ≈ [0.25,0.25,0.25,0.25]
+end
+
 @testset "nearestNeighbor" begin
     # 1D form
     target = 1.1
@@ -194,4 +221,32 @@ end
                                                           timestepSampleCount,
                                                           σ²,
                                                           max_iterations)
+    @test true
+end
+
+
+@testset "ValueFunctionApproximation_LocalAverage_precompute" begin
+    # Basic test to ensure there are no crashes
+    actionSpace = [[1.0,0], [0,1.0]] 
+    system = LinearSystem([0.5 0; 0 0.5])
+    γ = 0.8
+    τ = 0.25
+    λ = 1
+    psdSampleCount = 5
+    trajectorySampleCount = 3
+    timestepSampleCount = 2
+    σ² = 1
+    max_iterations = 2
+
+    ValueFunctionApproximation_LocalAverage_precompute(   system, 
+                                                          τ,
+                                                          γ,
+                                                          actionSpace,
+                                                          λ,
+                                                          psdSampleCount,
+                                                          trajectorySampleCount,
+                                                          timestepSampleCount,
+                                                          σ²,
+                                                          max_iterations)
+    @test true
 end
