@@ -224,6 +224,31 @@ end
     @test true
 end
 
+@testset "ValueFunctionApproximation_LocalAverage" begin
+    # Basic test to ensure there are no crashes
+    actionSpace = [[1.0,0], [0,1.0]] 
+    system = LinearSystem([0.5 0; 0 0.5])
+    γ = 0.8
+    τ = 0.25
+    λ = 1
+    psdSampleCount = 5
+    trajectorySampleCount = 3
+    timestepSampleCount = 2
+    σ² = 1
+    max_iterations = 2
+
+    ValueFunctionApproximation_LocalAverage(    system, 
+                                                τ,
+                                                γ,
+                                                actionSpace,
+                                                λ,
+                                                psdSampleCount,
+                                                trajectorySampleCount,
+                                                timestepSampleCount,
+                                                σ²,
+                                                max_iterations)
+    @test true
+end
 
 @testset "ValueFunctionApproximation_LocalAverage_precompute" begin
     # Basic test to ensure there are no crashes
