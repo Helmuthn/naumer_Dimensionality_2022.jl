@@ -184,6 +184,40 @@ end
 
 end
 
+
+@testset "optimalAction_LocalAverage" begin
+
+    # Test without value function impact
+    crlb         = [1.0 0.0;
+                    0.0 5.0]
+
+    new_state = [0,0]
+
+    actionSpace  = [[1.0, 0.0], [0.0, 1.0]]
+
+    jacobian     = [1.0 0.0
+                    0.0 1.0]
+    σ² = 1.0
+
+    psdsamples = zeros(2,2,2)
+    psdsamples[:,:,1] = [0.5 0.0;
+                         0.0 5.0 ]
+
+    psdsamples[:,:,2] = [1.0 0.0;
+                         0.0 0.8 ]
+
+    statesamples = zeros(2,1)
+    statesamples[:,1] = [0,0]
+
+    values =  [5.5,1.8]
+
+    d_max = 0.1
+
+    action = optimalAction_LocalAverage(crlb, new_state, actionSpace, psdsamples, statesamples,  values, jacobian, σ², d_max)
+    @test action == 2
+
+end
+
 @testset "valueUpdate_NearestNeighbor" begin
     crlb         = [1.0 0.0;
                     0.0 5.0]
