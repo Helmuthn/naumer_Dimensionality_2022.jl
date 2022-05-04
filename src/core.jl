@@ -324,7 +324,7 @@ end
 ################# POMDP Tools ###################
 #################################################
 
-export updateCRLB, optimalAction_NearestNeighbor, valueUpdate_NearestNeighbor, valueIterate_NearestNeighbor, valueIterate_NearestNeighbor_precompute!
+export updateCRLB, updateCRLB_naive, optimalAction_NearestNeighbor, valueUpdate_NearestNeighbor, valueIterate_NearestNeighbor, valueIterate_NearestNeighbor_precompute!
 export optimalAction_LocalAverage, valueUpdate_LocalAverage, valueIterate_LocalAverage
 
 """
