@@ -1,7 +1,10 @@
-# ICML 2022 Code
+# Dimensionality Collapse Code
 
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://helmuthn.github.io/naumer_Dimensionality_2022.jl/dev)
 [![Build Status](https://github.com/helmuthn/naumer_Dimensionality_2022.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/helmuthn/naumer_Dimensionality_2022.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/helmuthn/naumer_Dimensionality_2022.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/helmuthn/naumer_Dimensionality_2022.jl)
 
-This repository is for the code in my anticipated ICML submission.
+Repository of implementations for the manuscript
+*Dimensionality Collapse: Optimal Measurement Selection for Low-Error Infinite-Horizon Forecasting*
+
+Includes implementations of a dynamic programming approach to optimal experimental design for infinite-horizon forecasting based on the Bellman equation, as well as the proposed approach based on a local 1D approximation.
