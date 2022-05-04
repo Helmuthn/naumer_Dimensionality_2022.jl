@@ -55,6 +55,8 @@ end
     targetState = [0, 0.1]
     d_max = eps()
     @test localAverage(targetPSD, targetState, psdSamples, stateSamples, values, d_max) ≈ 1
+
+    # Check for argument mismatch error
     @test_throws ArgumentError localAverage(targetPSD, targetState, psdSamples, stateSamples, values[1:2], d_max)
 
 end
@@ -132,6 +134,28 @@ end
     jacobian     = [1.0 0.0
                     0.0 0.5]
     new_info = updateCRLB(crlb, action, jacobian, σ²)
+    @test new_info ≈ [0.5 0.0; 0.0 0.25]
+end
+
+@testset "updateCRLB_naive" begin
+
+    # Identity Jacobian, Identity FIM
+    crlb         = [1.0 0.0
+                    0.0 1.0]
+
+    action       = [1.0; 0]
+
+    jacobian     = [1.0 0.0
+                    0.0 1.0]
+    σ² = 1.0
+
+    new_info = updateCRLB_naive(crlb, action, jacobian, σ²)
+    @test new_info ≈ [0.5 0.0; 0.0 1.0]
+
+    # Scale Second Eigenvalue, same setup
+    jacobian     = [1.0 0.0
+                    0.0 0.5]
+    new_info = updateCRLB_naive(crlb, action, jacobian, σ²)
     @test new_info ≈ [0.5 0.0; 0.0 0.25]
 end
 
