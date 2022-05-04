@@ -1112,7 +1112,7 @@ function NearestNeighbor_OptimalPolicy( state,
     new_crlb = updateCRLB(crlb, actionSpace[1], jacobian, σ²)
     chosen_crlb = copy(new_crlb)
 
-    ~, crlb_index  = min_dist(crlb, psdSamples)
+    ~, crlb_index  = min_dist(new_crlb, psdSamples)
     ~, state_index = min_dist(new_state, stateSamples)
     base_index = (state_index-1)*psdSampleCount
 
