@@ -1240,7 +1240,7 @@ end
 ########################################
 ########## Direct Solution #############
 ########################################
-
+export exponentialmap_sphere, actiongradient_1DApprox
 export optimalaction_1DApprox, measurementvalue_1DApprox
 export actiongradientstep_1DApprox
 

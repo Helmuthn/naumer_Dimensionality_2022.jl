@@ -184,7 +184,6 @@ end
 
 end
 
-
 @testset "optimalAction_LocalAverage" begin
 
     # Test without value function impact
@@ -345,4 +344,70 @@ end
                                                           σ²,
                                                           max_iterations)
     @test true
+end
+
+@testset "1D Approximation Method" begin
+    @testset "measurementvalue_1DApprox" begin
+        action = [1.0, 0.0]
+        limitvector = [1.0, 0.0]
+        crlb = [1.0 0; 0 1.0]
+        σ² = 1
+
+        @test measurementvalue_1DApprox(action, limitvector, crlb, σ²) ≈ 0.5
+    end
+
+    @testset "actiongradient_1DApprox" begin
+        action = [1.0, 0.0]
+        limitvector = [1.0, 0.0]
+        crlb = [1.0 0; 0 1.0]
+        σ² = 1
+
+        @test actiongradient_1DApprox(action, limitvector, crlb, σ²) == [0,0]
+
+        action = [0.5,0.5]
+        action ./= sqrt(sum(abs2, action))
+        decision = actiongradient_1DApprox(action, limitvector, crlb, σ²)
+        decision ./= sqrt(sum(abs2, decision))
+        truth = [1, -1] ./ sqrt(2)
+        @test decision ≈ truth
+    end
+
+    @testset "exponentialmap_sphere" begin
+        state = [1.0,0.0]
+        grad = zeros(length(state))
+        τ = 1
+        @test exponentialmap_sphere(state, grad, τ) == state
+
+        grad[1] = π
+        @test exponentialmap_sphere(state, grad, τ) ≈ [-1.0, 0.0]
+    end
+
+    @testset "actiongradientstep_1DApprox" begin
+        # For now, just test fixed point
+        action = [1.0, 0.0]
+        limitvector = [1.0, 0.0]
+        crlb = [1.0 0; 0 1.0]
+        σ² = 1
+        τ = 1
+        
+        @test actiongradientstep_1DApprox(action, limitvector, crlb, σ², τ) == action
+    end
+
+    @testset "optimalaction_1DApprox" begin
+        # Known limitvector version
+        a1 = [1.0, 0.0]
+        a2 = [0.0, 1.0]
+        actionspace = [a1, a2]
+
+        limitvector = [1.0, 0.0]
+        crlb = [1.0 0; 0 1.0]
+        σ² = 1
+
+        @test optimalaction_1DApprox(actionspace, limitvector, crlb, σ²)[1] == 1
+
+        # Given a system version
+        system = LinearSystem([-0.9 0; 0 -0.1])
+        state = [1,2]
+        @test optimalaction_1DApprox(actionspace, system, state, crlb, σ², 10)[1] == 2
+    end
 end
