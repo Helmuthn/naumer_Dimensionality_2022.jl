@@ -7,10 +7,6 @@ using SafeTestsets
     include("core_test.jl")
 end
 
-@safetestset "evaluation.jl" begin
-    include("evaluation_test.jl")
-end
-
 @safetestset "systems.jl" begin
     include("systems_test.jl")
 end
