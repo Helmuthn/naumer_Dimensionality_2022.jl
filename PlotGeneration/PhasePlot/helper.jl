@@ -68,7 +68,7 @@ function simsystem(u)
 
     prob = ODEProblem(vanderpol!,u,tspan,μ)
 
-    sol = solve(prob,rtol=1e-6,atol=1e-6,sensealg=QuadratureAdjoint())
+    sol = solve(prob,reltol=1e-6,abstol=1e-6,sensealg=QuadratureAdjoint())
     return sol.u[end]
 end
 
