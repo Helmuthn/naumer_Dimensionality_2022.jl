@@ -8,3 +8,8 @@ Repository of implementations for the manuscript
 *Dimensionality Collapse: Optimal Measurement Selection for Low-Error Infinite-Horizon Forecasting*
 
 Includes implementations of a dynamic programming approach to optimal experimental design for infinite-horizon forecasting based on the Bellman equation, as well as the proposed approach based on a local 1D approximation.
+
+## Important Note
+The plotting code depends on an old version of [Makie.jl](https://github.com/MakieOrg/Makie.jl).
+
+Due to breaking changes in the library, use version 0.15.3 of Makie.jl to regenerate the figures.
